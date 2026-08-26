@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>DAVY'S MAP EXPLORER v3.15</title>
+<title>DAVY'S MAP EXPLORER v3.16</title>
 <link rel="icon" type="image/png" href="brand-image.png">
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Knewave&display=swap" rel="stylesheet">
@@ -265,7 +265,7 @@
       onerror="this.style.display='none'"
     >
     <span class="brand-title">DAVY'S MAP EXPLORER</span>
-    <span class="version-tag">v3.15</span>
+    <span class="version-tag">v3.16</span>
   </header>
   <aside id="sidebar">
     <div class="group">
@@ -301,6 +301,7 @@
       <select id="dataLayer">
         <option value="none">None — geography only</option>
         <option value="wfp_shift">WFP · 2019 → 2023 · Council At-Large rank shift</option>
+        <option value="wfp_vote_share_shift">WFP · 2019 → 2023 · citywide vote-share shift</option>
         <option value="amanda">2023 Primary · Amanda McIllmurray · % of DEM ballots</option>
         <option value="rabb">2026 Primary · Chris Rabb · % of PA-03 DEM vote</option>
         <option value="harris_trump_24g">2024 General · Kamala Harris vs Donald Trump · margin</option>
@@ -348,7 +349,7 @@
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script>
-// DAVY'S MAP EXPLORER v3.15
+// DAVY'S MAP EXPLORER v3.16
 // LIVE DATA: Supabase project THE PORTAL.
 // This is a publishable browser key, not a service-role or secret key.
 const SUPABASE_URL = 'https://bxrxpiqyfnbahmqglkkc.supabase.co';
@@ -381,6 +382,8 @@ let addressMarker = null;
 let addressPopup = null;
 let wfpRowsCache = null;
 let wfpRowsPromise = null;
+let wfpShareRowsCache = null;
+let wfpShareRowsPromise = null;
 const contestRowsCache = new Map();
 const contestRowsPromise = new Map();
 
@@ -1031,6 +1034,38 @@ async function loadWfpShift() {
   map.getSource('precincts').setData(targetPrecincts);
 }
 
+async function getWfpShareRows() {
+  if (wfpShareRowsCache) return wfpShareRowsCache;
+  if (!wfpShareRowsPromise) {
+    wfpShareRowsPromise = rpc('map_wfp_19g_23g_vote_share_shift', {
+      p_geography_type:'citywide',
+      p_geography_value:null
+    }).then(rows => {
+      wfpShareRowsCache = rows;
+      return rows;
+    }).finally(() => {
+      wfpShareRowsPromise = null;
+    });
+  }
+  return wfpShareRowsPromise;
+}
+
+async function loadWfpVoteShareShift() {
+  const targetPrecincts = currentPrecincts;
+  const rows = await getWfpShareRows();
+  if (currentPrecincts !== targetPrecincts) return;
+  const byDivision = new Map(rows.map(r => [String(r.division_code).trim(), r]));
+  targetPrecincts.features.forEach(f => {
+    const r=byDivision.get(String(f.properties.division_code).trim());
+    f.properties.wfp_votes_19 = r ? Number(r.wfp_votes_19||0) : 0;
+    f.properties.wfp_share_19_pct = r && r.wfp_share_19_pct != null ? Number(r.wfp_share_19_pct) : null;
+    f.properties.wfp_votes_23 = r ? Number(r.wfp_votes_23||0) : 0;
+    f.properties.wfp_share_23_pct = r && r.wfp_share_23_pct != null ? Number(r.wfp_share_23_pct) : null;
+    f.properties.wfp_share_shift_pp = r && r.wfp_share_shift_pp != null ? Number(r.wfp_share_shift_pp) : null;
+  });
+  map.getSource('precincts').setData(targetPrecincts);
+}
+
 async function getContestRows(contestId) {
   if (contestRowsCache.has(contestId)) return contestRowsCache.get(contestId);
   if (!contestRowsPromise.has(contestId)) {
@@ -1091,6 +1126,19 @@ function setLegend(layer) {
       <div class="legend-row"><span class="swatch" style="background:#cde8c8"></span><span>+1 to +2</span></div>
       <div class="legend-row"><span class="swatch" style="background:#78ba73"></span><span>+3 to +5</span></div>
       <div class="legend-row"><span class="swatch" style="background:#2f7d32"></span><span>+6 or better</span></div>`;
+    return;
+  }
+  if (layer==='wfp_vote_share_shift') {
+    legend.style.display='block';
+    legendTitle.textContent='WFP share of citywide vote · shift · 2019 → 2023';
+    legendRows.innerHTML=`
+      <div class="legend-row"><span class="swatch" style="background:#8b1e1e"></span><span>−0.050 pp or worse</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#c9534f"></span><span>−0.050 to −0.020 pp</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#efb0aa"></span><span>−0.020 to −0.005 pp</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#f3f0e6"></span><span>Little / no change</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#cde8c8"></span><span>+0.005 to +0.020 pp</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#78ba73"></span><span>+0.020 to +0.050 pp</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#2f7d32"></span><span>+0.050 pp or better</span></div>`;
     return;
   }
   if (layer==='rabb') {
@@ -1182,6 +1230,13 @@ async function updateDataLayer() {
     map.setPaintProperty('precinct-fill','fill-color',
       ['step',['coalesce',['get','wfp_rank_shift'],0],
         '#8b1e1e',-4,'#c9534f',-1,'#efb0aa',0,'#f3f0e6',1,'#cde8c8',3,'#78ba73',6,'#2f7d32']);
+    map.setPaintProperty('precinct-fill','fill-opacity',0.78);
+  } else if (layer==='wfp_vote_share_shift') {
+    await loadWfpVoteShareShift();
+    map.setPaintProperty('precinct-fill','fill-color',
+      ['step',['coalesce',['get','wfp_share_shift_pp'],0],
+        '#8b1e1e',-0.05,'#c9534f',-0.02,'#efb0aa',-0.005,'#f3f0e6',
+        0.005,'#cde8c8',0.02,'#78ba73',0.05,'#2f7d32']);
     map.setPaintProperty('precinct-fill','fill-opacity',0.78);
   } else if (layer==='rabb') {
     map.setPaintProperty('precinct-fill','fill-color',
@@ -1401,6 +1456,32 @@ async function updateAreaPerformance() {
         <div>Unchanged divisions</div><div class="v">${unchanged.toLocaleString()}</div>
         <div>Declined divisions</div><div class="v">${declined.toLocaleString()}</div>
         <div>Average combined-rank shift</div><div class="v">${n?((sum/n)>0?'+':'')+(sum/n).toFixed(1):'—'}</div>
+      </div>`;
+  } else if (layer==='wfp_vote_share_shift') {
+    let votes19=0,votes23=0,share19=0,share23=0,shift=0,n=0;
+    for (const f of (currentPrecincts.features||[])) {
+      const p=f.properties||{};
+      const s19=Number(p.wfp_share_19_pct);
+      const s23=Number(p.wfp_share_23_pct);
+      const sh=Number(p.wfp_share_shift_pp);
+      if (!Number.isFinite(s19) || !Number.isFinite(s23) || !Number.isFinite(sh)) continue;
+      votes19 += Number(p.wfp_votes_19||0);
+      votes23 += Number(p.wfp_votes_23||0);
+      share19 += s19;
+      share23 += s23;
+      shift += sh;
+      n++;
+    }
+    const shiftLabel=n ? `${shift>0?'+':''}${shift.toFixed(3)} pp` : '—';
+    html=`<div class="area-performance-head">Area performance</div>
+      <div class="area-performance-area">${escapeHtml(area)}</div>
+      <div class="area-performance-sub">Share of citywide Brooks + O’Rourke vote · 2019 → 2023</div>
+      <div class="area-stat-grid">
+        <div>2019 WFP votes</div><div class="v">${votes19.toLocaleString()}</div>
+        <div>2019 share of citywide WFP vote</div><div class="v">${n?share19.toFixed(3)+'%':'—'}</div>
+        <div>2023 WFP votes</div><div class="v">${votes23.toLocaleString()}</div>
+        <div>2023 share of citywide WFP vote</div><div class="v">${n?share23.toFixed(3)+'%':'—'}</div>
+        <div>Vote-share shift</div><div class="v">${shiftLabel}</div>
       </div>`;
   }
 
@@ -1713,6 +1794,14 @@ map.on('load', async ()=>{
     return `<span class="${cls}">${label}</span>`;
   }
 
+  function shareShiftHtml(value) {
+    if (value==null || !Number.isFinite(Number(value))) return '<span class="shift-neutral">—</span>';
+    const n=Number(value);
+    const cls=n>0?'shift-improved':n<0?'shift-declined':'shift-neutral';
+    const label=`${n>0?'+':''}${n.toFixed(3)} pp`;
+    return `<span class="${cls}">${label}</span>`;
+  }
+
   function parseJsonArray(raw) {
     if (Array.isArray(raw)) return raw;
     if (typeof raw === 'string') {
@@ -1917,6 +2006,16 @@ map.on('load', async ()=>{
         </div>
         <div class="wfp-shift"><span>WFP rank shift</span>${shiftHtml(p.wfp_rank_shift)}</div>
       </div>` : '';
+    const wfpShare=dataLayer.value==='wfp_vote_share_shift' ? `
+      <div class="wfp-popup">
+        <div class="popup-grid">
+          <div>2019 WFP votes</div><div class="v">${Number(p.wfp_votes_19||0).toLocaleString()}</div>
+          <div>2019 share of citywide WFP</div><div class="v">${p.wfp_share_19_pct==null?'—':Number(p.wfp_share_19_pct).toFixed(3)+'%'}</div>
+          <div>2023 WFP votes</div><div class="v">${Number(p.wfp_votes_23||0).toLocaleString()}</div>
+          <div>2023 share of citywide WFP</div><div class="v">${p.wfp_share_23_pct==null?'—':Number(p.wfp_share_23_pct).toFixed(3)+'%'}</div>
+        </div>
+        <div class="wfp-shift"><span>Vote-share shift</span>${shareShiftHtml(p.wfp_share_shift_pp)}</div>
+      </div>` : '';
     const rabb=dataLayer.value==='rabb' ? rabbPopupHtml(p) : '';
     const bh16=dataLayer.value==='bernie_hillary' ? bh16PopupHtml(p) : '';
     const th16=dataLayer.value==='trump_hillary' ? th16PopupHtml(p) : '';
@@ -1938,7 +2037,7 @@ map.on('load', async ()=>{
           <div>Council</div><div class="v">${p.city_council_district ?? '—'}</div>
           <div>PA House</div><div class="v">${p.state_house_district ?? '—'}</div>
           ${metric}
-        </div>${wfp}${rabb}${ht24}${dg24}${bh16}${th16}`)
+        </div>${wfp}${wfpShare}${rabb}${ht24}${dg24}${bh16}${th16}`)
       .addTo(map);
   });
   map.on('mouseenter','precinct-fill',()=>map.getCanvas().style.cursor=sketchMode?'crosshair':'pointer');
