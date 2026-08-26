@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>DAVY'S MAP EXPLORER v3.16</title>
+<title>DAVY'S MAP EXPLORER v3.17</title>
 <link rel="icon" type="image/png" href="brand-image.png">
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Knewave&display=swap" rel="stylesheet">
@@ -265,7 +265,7 @@
       onerror="this.style.display='none'"
     >
     <span class="brand-title">DAVY'S MAP EXPLORER</span>
-    <span class="version-tag">v3.16</span>
+    <span class="version-tag">v3.17</span>
   </header>
   <aside id="sidebar">
     <div class="group">
@@ -349,7 +349,7 @@
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script>
-// DAVY'S MAP EXPLORER v3.16
+// DAVY'S MAP EXPLORER v3.17
 // LIVE DATA: Supabase project THE PORTAL.
 // This is a publishable browser key, not a service-role or secret key.
 const SUPABASE_URL = 'https://bxrxpiqyfnbahmqglkkc.supabase.co';
@@ -1005,7 +1005,7 @@ async function loadAmandaLegacyUnused() {
 async function getWfpRows() {
   if (wfpRowsCache) return wfpRowsCache;
   if (!wfpRowsPromise) {
-    wfpRowsPromise = rpc('map_wfp_19g_23g_rank_shift', {
+    wfpRowsPromise = rpc('map_wfp_19g_23g_rank_shift_json', {
       p_geography_type:'citywide',
       p_geography_value:null
     }).then(rows => {
@@ -1037,7 +1037,7 @@ async function loadWfpShift() {
 async function getWfpShareRows() {
   if (wfpShareRowsCache) return wfpShareRowsCache;
   if (!wfpShareRowsPromise) {
-    wfpShareRowsPromise = rpc('map_wfp_19g_23g_vote_share_shift', {
+    wfpShareRowsPromise = rpc('map_wfp_19g_23g_vote_share_shift_json', {
       p_geography_type:'citywide',
       p_geography_value:null
     }).then(rows => {
