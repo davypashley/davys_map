@@ -327,7 +327,7 @@
       onerror="this.style.display='none'"
     >
     <span class="brand-title">DAVY'S MAP EXPLORER</span>
-    <span class="version-tag">v4.2</span>
+    <span class="version-tag">v4.3</span>
   </header>
   <aside id="sidebar">
     <div class="group" id="lookupGroup">
@@ -372,6 +372,7 @@
         <option value="trump_hillary">2016 General · Donald Trump vs Hillary Clinton · margin</option>
         <option value="sd16_22g" hidden>2022 General · PA Senate 16 · Pinsley vs Coleman · margin</option>
         <option value="sd16_pinsley_density" hidden>2022 General · Mark Pinsley · vote density</option>
+        <option value="sd16_pinsley_dem_gap" hidden>2022 Pinsley vote contribution vs 2026 DEM registration</option>
         <option value="sd16_registration_26p" hidden>2026 Primary · registration · DEM vs REP margin</option>
       </select>
       <div id="legend">
@@ -852,7 +853,9 @@ map.addControl(sketchControl,'top-right');
 
 const ALL_DISTRICT_TYPES = new Set(['city_council','pa_house','pa_senate','congressional']);
 const SD16_HOUSE_DISTRICTS = new Set(['131','132','134','143','145','183','187']);
-const SD16_DATA_LAYERS = new Set(['sd16_22g','sd16_pinsley_density','sd16_registration_26p']);
+const SD16_DATA_LAYERS = new Set(['sd16_22g','sd16_pinsley_density','sd16_pinsley_dem_gap']);
+// Keep retired/temporarily hidden SD16 layers isolated from the Philadelphia dropdown.
+const SD16_ONLY_DATA_LAYERS = new Set([...SD16_DATA_LAYERS,'sd16_registration_26p']);
 
 function isSd16Mode() {
   return geoType.value==='pa_senate' && geoValue.value==='16';
@@ -1282,6 +1285,46 @@ async function loadSd16Registration() {
   map.getSource('precincts').setData(targetPrecincts);
 }
 
+async function loadSd16PinsleyDemGap() {
+  const targetPrecincts=currentPrecincts;
+  const [electionData,registrationData]=await Promise.all([getSd16ElectionData(),getSd16RegistrationData()]);
+  if (currentPrecincts!==targetPrecincts || !isSd16Mode()) return;
+
+  const electionByGeoid=new Map((electionData?.precincts||[]).map(r=>[String(r.geoid20),r]));
+  const registrationByGeoid=new Map((registrationData?.precincts||[]).map(r=>[String(r.geoid20),r]));
+  const districtResults=parseCandidateResults(electionData?.sd16_summary?.candidate_results);
+  const districtPinsley=contestCandidate(districtResults,'PINSLEY-Q7MX');
+  const districtPinsleyVotes=districtPinsley?.votes==null?null:Number(districtPinsley.votes);
+  const districtDemRegistration=registrationData?.sd16_summary?.registration?.DEM==null
+    ? null
+    : Number(registrationData.sd16_summary.registration.DEM);
+
+  targetPrecincts.features.forEach(f=>{
+    const p=f.properties||{};
+    const geoid=String(p.geoid20);
+    const electionRow=electionByGeoid.get(geoid);
+    const registrationRow=registrationByGeoid.get(geoid);
+    const results=parseCandidateResults(electionRow?.candidate_results);
+    const pinsley=contestCandidate(results,'PINSLEY-Q7MX');
+    const pinsleyVotes=pinsley?.votes==null?null:Number(pinsley.votes);
+    const pinsleyPct=pinsley?.pct==null?null:Number(pinsley.pct);
+    const demRegistration=registrationRow?.registration?.DEM==null?null:Number(registrationRow.registration.DEM);
+    const pinsleyShare=(pinsleyVotes!=null && districtPinsleyVotes>0) ? 100*pinsleyVotes/districtPinsleyVotes : null;
+    const demShare=(demRegistration!=null && districtDemRegistration>0) ? 100*demRegistration/districtDemRegistration : null;
+
+    if (electionRow?.house_district!=null) p.house_district=String(electionRow.house_district);
+    else if (registrationRow?.house_district!=null) p.house_district=String(registrationRow.house_district);
+    p.sd16_candidate_results=results;
+    p.sd16_pinsley_votes=pinsleyVotes;
+    p.sd16_pinsley_precinct_pct=pinsleyPct;
+    p.sd16_pinsley_share_of_total_pct=pinsleyShare;
+    p.sd16_dem_registration=demRegistration;
+    p.sd16_dem_share_of_total_pct=demShare;
+    p.sd16_pinsley_dem_gap_pp=(pinsleyShare!=null && demShare!=null) ? pinsleyShare-demShare : null;
+  });
+  map.getSource('precincts').setData(targetPrecincts);
+}
+
 async function getContestRows(contestId) {
   if (contestRowsCache.has(contestId)) return contestRowsCache.get(contestId);
   if (!contestRowsPromise.has(contestId)) {
@@ -1344,6 +1387,19 @@ function setLegend(layer) {
       <div class="legend-row"><span class="swatch" style="background:#8facd1"></span><span>600 to 749</span></div>
       <div class="legend-row"><span class="swatch" style="background:#648bc1"></span><span>750 to 899</span></div>
       <div class="legend-row"><span class="swatch" style="background:#214f91"></span><span>900 or more</span></div>`;
+    return;
+  }
+  if (layer==='sd16_pinsley_dem_gap') {
+    legend.style.display='block';
+    legendTitle.textContent='Pinsley vote contribution − DEM registration share';
+    legendRows.innerHTML=`
+      <div class="legend-row"><span class="swatch" style="background:#9d2929"></span><span>Under-contributed by 0.30+ pp</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#d46767"></span><span>Under-contributed by 0.15–0.30 pp</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#eab8b8"></span><span>Under-contributed by 0.05–0.15 pp</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#f3f0e6"></span><span>Within ±0.05 pp</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#b7c9e2"></span><span>Over-contributed by 0.05–0.15 pp</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#648bc1"></span><span>Over-contributed by 0.15–0.20 pp</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#214f91"></span><span>Over-contributed by 0.20+ pp</span></div>`;
     return;
   }
   if (layer==='sd16_registration_26p') {
@@ -1495,6 +1551,15 @@ async function updateDataLayer() {
           '#eef4fb',300,'#dce7f4',450,'#b7c9e2',600,'#8facd1',750,'#648bc1',900,'#214f91']
       ]);
     map.setPaintProperty('precinct-fill','fill-opacity',0.84);
+  } else if (layer==='sd16_pinsley_dem_gap') {
+    await loadSd16PinsleyDemGap();
+    map.setPaintProperty('precinct-fill','fill-color',
+      ['case',
+        ['==',['get','sd16_pinsley_dem_gap_pp'],null], 'rgba(255,255,255,0)',
+        ['step',['get','sd16_pinsley_dem_gap_pp'],
+          '#9d2929',-0.30,'#d46767',-0.15,'#eab8b8',-0.05,'#f3f0e6',0.05,'#b7c9e2',0.15,'#648bc1',0.20,'#214f91']
+      ]);
+    map.setPaintProperty('precinct-fill','fill-opacity',0.82);
   } else if (layer==='sd16_registration_26p') {
     await loadSd16Registration();
     map.setPaintProperty('precinct-fill','fill-color',
@@ -1784,6 +1849,71 @@ async function updateSd16AreaPerformance() {
     return true;
   }
 
+  if (layer==='sd16_pinsley_dem_gap') {
+    const [electionData,registrationData]=await Promise.all([getSd16ElectionData(),getSd16RegistrationData()]);
+    const districtResults=parseCandidateResults(electionData?.sd16_summary?.candidate_results);
+    const districtPinsley=contestCandidate(districtResults,'PINSLEY-Q7MX');
+    const districtPinsleyVotes=districtPinsley?.votes==null?null:Number(districtPinsley.votes);
+    const districtDem=registrationData?.sd16_summary?.registration?.DEM==null?null:Number(registrationData.sd16_summary.registration.DEM);
+
+    let label='PA STATE SENATE DISTRICT 16';
+    let sub='2022 Pinsley vote distribution vs 2026 DEM registration footprint';
+    let pinsleyVotes=districtPinsleyVotes;
+    let demRegistration=districtDem;
+    let precinctVotePct=districtPinsley?.pct==null?null:Number(districtPinsley.pct);
+    let precinctMeta='';
+
+    if (selectedSd16PrecinctGeoid) {
+      const electionRow=(electionData?.precincts||[]).find(r=>String(r.geoid20)===String(selectedSd16PrecinctGeoid));
+      const registrationRow=(registrationData?.precincts||[]).find(r=>String(r.geoid20)===String(selectedSd16PrecinctGeoid));
+      if (electionRow || registrationRow) {
+        const row=electionRow||registrationRow;
+        label=row.display_name||row.precinct_name||`PRECINCT ${row.geoid20}`;
+        sub='2022 Pinsley vote contribution vs 2026 DEM registration · PRECINCT SNAPSHOT';
+        const results=parseCandidateResults(electionRow?.candidate_results);
+        const pinsley=contestCandidate(results,'PINSLEY-Q7MX');
+        pinsleyVotes=pinsley?.votes==null?null:Number(pinsley.votes);
+        precinctVotePct=pinsley?.pct==null?null:Number(pinsley.pct);
+        demRegistration=registrationRow?.registration?.DEM==null?null:Number(registrationRow.registration.DEM);
+        precinctMeta=sd16PrecinctMetaHtml(row);
+      }
+    } else if (selectedSd16HouseDistrict) {
+      const electionRow=(electionData?.house_summaries||[]).find(r=>String(r.house_district)===String(selectedSd16HouseDistrict));
+      const registrationRow=(registrationData?.house_summaries||[]).find(r=>String(r.house_district)===String(selectedSd16HouseDistrict));
+      if (electionRow || registrationRow) {
+        const row=electionRow||registrationRow;
+        label=row.label||`HOUSE DISTRICT ${selectedSd16HouseDistrict} — SD16 PORTION ONLY`;
+        sub='2022 Pinsley vote contribution vs 2026 DEM registration · SD16 PORTION ONLY';
+        const results=parseCandidateResults(electionRow?.candidate_results);
+        const pinsley=contestCandidate(results,'PINSLEY-Q7MX');
+        pinsleyVotes=pinsley?.votes==null?null:Number(pinsley.votes);
+        precinctVotePct=pinsley?.pct==null?null:Number(pinsley.pct);
+        demRegistration=registrationRow?.registration?.DEM==null?null:Number(registrationRow.registration.DEM);
+      }
+    }
+
+    const pinsleyShare=(pinsleyVotes!=null && districtPinsleyVotes>0) ? 100*pinsleyVotes/districtPinsleyVotes : null;
+    const demShare=(demRegistration!=null && districtDem>0) ? 100*demRegistration/districtDem : null;
+    const gap=(pinsleyShare!=null && demShare!=null) ? pinsleyShare-demShare : null;
+    const gapLabel=gap==null?'—':`${gap>0?'+':''}${gap.toFixed(2)} pp`;
+
+    areaPerformance.innerHTML=`<div class="area-performance-head">${selectedSd16PrecinctGeoid?'Precinct snapshot':'Area performance'}</div>
+      <div class="area-performance-area">${escapeHtml(label)}</div>
+      ${precinctMeta}
+      <div class="area-performance-sub">${escapeHtml(sub)}</div>
+      <div class="area-stat-grid">
+        <div>MARK PINSLEY votes</div><div class="v">${pinsleyVotes==null?'—':pinsleyVotes.toLocaleString()}</div>
+        <div>Pinsley vote share here</div><div class="v">${precinctVotePct==null?'—':precinctVotePct.toFixed(1)+'%'}</div>
+        <div>Share of all Pinsley votes</div><div class="v">${pinsleyShare==null?'—':pinsleyShare.toFixed(2)+'%'}</div>
+        <div>Registered Democrats (2026)</div><div class="v">${demRegistration==null?'—':demRegistration.toLocaleString()}</div>
+        <div>Share of SD16 DEM registration</div><div class="v">${demShare==null?'—':demShare.toFixed(2)+'%'}</div>
+        <div>Contribution gap</div><div class="v">${gapLabel}</div>
+      </div>
+      <div class="area-note">Positive = this area produced a larger share of Pinsley’s 2022 vote than its share of SD16’s 2026 Democratic registration. Negative = smaller. This is a structural comparison across different years, not a direct turnout measure.</div>`;
+    areaPerformance.classList.add('is-visible');
+    return true;
+  }
+
   if (layer==='sd16_registration_26p') {
     const data=await getSd16RegistrationData();
     let label='PA STATE SENATE DISTRICT 16';
@@ -2008,18 +2138,22 @@ function updateModeUi() {
   divisionLabelsText.textContent=sd16?'Precinct':'Division';
 
   for (const option of dataLayer.options) {
-    const isSd=SD16_DATA_LAYERS.has(option.value);
+    const isSdVisible=SD16_DATA_LAYERS.has(option.value);
+    const isSdOnly=SD16_ONLY_DATA_LAYERS.has(option.value);
     if (option.value==='none') {
       option.hidden=false;
       option.disabled=false;
+    } else if (sd16) {
+      option.hidden=!isSdVisible;
+      option.disabled=!isSdVisible;
     } else {
-      option.hidden=sd16 ? !isSd : isSd;
-      option.disabled=sd16 ? !isSd : isSd;
+      option.hidden=isSdOnly;
+      option.disabled=isSdOnly;
     }
   }
 
   if (sd16 && !SD16_DATA_LAYERS.has(dataLayer.value) && dataLayer.value!=='none') dataLayer.value='none';
-  if (!sd16 && SD16_DATA_LAYERS.has(dataLayer.value)) dataLayer.value='none';
+  if (!sd16 && SD16_ONLY_DATA_LAYERS.has(dataLayer.value)) dataLayer.value='none';
 
   if (sd16) {
     pollingPlacesToggle.checked=false;
@@ -2587,6 +2721,19 @@ map.on('load', async ()=>{
           </div>
         </div>` : '';
 
+      const demGapPopup=dataLayer.value==='sd16_pinsley_dem_gap' ? `
+        <div style="margin-top:9px;padding-top:8px;border-top:1px solid #e3e3e3">
+          <div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#666;font-weight:850;margin-bottom:5px">PINSLEY VS DEM REGISTRATION</div>
+          <div class="popup-grid">
+            <div>Pinsley votes</div><div class="v">${p.sd16_pinsley_votes==null?'—':Number(p.sd16_pinsley_votes).toLocaleString()}</div>
+            <div>Pinsley vote share here</div><div class="v">${p.sd16_pinsley_precinct_pct==null?'—':Number(p.sd16_pinsley_precinct_pct).toFixed(1)+'%'}</div>
+            <div>Share of all Pinsley votes</div><div class="v">${p.sd16_pinsley_share_of_total_pct==null?'—':Number(p.sd16_pinsley_share_of_total_pct).toFixed(2)+'%'}</div>
+            <div>Registered Democrats (2026)</div><div class="v">${p.sd16_dem_registration==null?'—':Number(p.sd16_dem_registration).toLocaleString()}</div>
+            <div>Share of SD16 DEM registration</div><div class="v">${p.sd16_dem_share_of_total_pct==null?'—':Number(p.sd16_dem_share_of_total_pct).toFixed(2)+'%'}</div>
+            <div>Contribution gap</div><div class="v">${p.sd16_pinsley_dem_gap_pp==null?'—':`${Number(p.sd16_pinsley_dem_gap_pp)>0?'+':''}${Number(p.sd16_pinsley_dem_gap_pp).toFixed(2)} pp`}</div>
+          </div>
+        </div>` : '';
+
       new maplibregl.Popup({maxWidth:'340px'})
         .setLngLat(e.lngLat)
         .setHTML(`<div class="popup-title">PRECINCT ${escapeHtml(p.display_name||p.precinct_name||p.geoid20||'')}</div>
@@ -2594,7 +2741,7 @@ map.on('load', async ()=>{
             <div>County</div><div class="v">${escapeHtml(p.county_name||'—')}</div>
             <div>Municipality</div><div class="v">${escapeHtml(p.municipality_name||'—')}</div>
             <div>PA House</div><div class="v">${escapeHtml(p.house_district||'—')}</div>
-          </div>${densityPopup}`)
+          </div>${densityPopup}${demGapPopup}`)
         .addTo(map);
       return;
     }
