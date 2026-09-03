@@ -306,8 +306,9 @@
     line-height:1.35;
     color:#8a8a8a;
     font-style:italic;
-    pointer-events:none;
   }
+  .project-credit a { color:inherit; text-decoration:underline; text-underline-offset:1px; }
+  .map-view-count { margin-top:3px; font-style:normal; letter-spacing:.025em; }
   #sidebar { padding-bottom:78px; }
   @media (max-width:760px) {
     .project-credit { display:none; }
@@ -326,7 +327,7 @@
       onerror="this.style.display='none'"
     >
     <span class="brand-title">DAVY'S MAP EXPLORER</span>
-    <span class="version-tag">v4.1</span>
+    <span class="version-tag">v4.2</span>
   </header>
   <aside id="sidebar">
     <div class="group" id="lookupGroup">
@@ -370,6 +371,7 @@
         <option value="bernie_hillary">2016 Primary · Bernie Sanders vs Hillary Clinton · margin</option>
         <option value="trump_hillary">2016 General · Donald Trump vs Hillary Clinton · margin</option>
         <option value="sd16_22g" hidden>2022 General · PA Senate 16 · Pinsley vs Coleman · margin</option>
+        <option value="sd16_pinsley_density" hidden>2022 General · Mark Pinsley · vote density</option>
         <option value="sd16_registration_26p" hidden>2026 Primary · registration · DEM vs REP margin</option>
       </select>
       <div id="legend">
@@ -418,7 +420,8 @@
     <div class="project-credit" aria-label="Project credits">
       <div>Data analysis, interpretation, management, and overall project creation by Davy Pashley.</div>
       <div>The use of artificial intelligence was limited to coding assistance, technical implementation, and debugging in areas beyond the creator’s existing technical skill set.</div>
-      <div>For additional map files, sources, and data visualization resources, visit Davy’s Map Resources.</div>
+      <div>For additional map files, sources, and data visualization resources, visit <a href="https://docs.google.com/document/d/1YwSZmEgexciNE9ySvtAHgrhWAqDHIBn6Hj_Qdpg8xbI/edit?tab=t.0" target="_blank" rel="noopener noreferrer">Davy’s Map Resources</a>.</div>
+      <div class="map-view-count">Map views: <span id="mapViewCount">—</span></div>
     </div>
   </aside>
   <main id="map"></main>
@@ -426,7 +429,7 @@
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script>
-// DAVY'S MAP EXPLORER v4.1
+// DAVY'S MAP EXPLORER v4.2
 // LIVE DATA: Supabase project THE PORTAL.
 // This is a publishable browser key, not a service-role or secret key.
 const SUPABASE_URL = 'https://bxrxpiqyfnbahmqglkkc.supabase.co';
@@ -454,6 +457,7 @@ const sd16BoundaryGroup = document.getElementById('sd16BoundaryGroup');
 const houseDistrictsToggle = document.getElementById('houseDistrictsToggle');
 const wardLabelsText = document.getElementById('wardLabelsText');
 const divisionLabelsText = document.getElementById('divisionLabelsText');
+const mapViewCount = document.getElementById('mapViewCount');
 
 let geographyOptions = {};
 let currentPrecincts = {type:'FeatureCollection',features:[]};
@@ -690,6 +694,23 @@ async function rpc(name, args={}) {
   return response.json();
 }
 
+async function incrementMapViewCounter() {
+  if (!mapViewCount) return;
+  try {
+    const result=await rpc('increment_davys_map_explorer_views');
+    const raw=Array.isArray(result) ? result[0] : result;
+    const value=(raw && typeof raw==='object') ? Object.values(raw)[0] : raw;
+    const count=Number(value);
+    mapViewCount.textContent=Number.isFinite(count) ? count.toLocaleString() : '—';
+  } catch (err) {
+    console.error('Map view counter error',err);
+    mapViewCount.textContent='—';
+  }
+}
+
+// One persistent counter in Supabase is shared by every published Explorer version.
+incrementMapViewCounter();
+
 const map = new maplibregl.Map({
   container:'map',
   style:{
@@ -831,7 +852,7 @@ map.addControl(sketchControl,'top-right');
 
 const ALL_DISTRICT_TYPES = new Set(['city_council','pa_house','pa_senate','congressional']);
 const SD16_HOUSE_DISTRICTS = new Set(['131','132','134','143','145','183','187']);
-const SD16_DATA_LAYERS = new Set(['sd16_22g','sd16_registration_26p']);
+const SD16_DATA_LAYERS = new Set(['sd16_22g','sd16_pinsley_density','sd16_registration_26p']);
 
 function isSd16Mode() {
   return geoType.value==='pa_senate' && geoValue.value==='16';
@@ -1208,6 +1229,9 @@ async function loadSd16Election() {
   const data=await getSd16ElectionData();
   if (currentPrecincts!==targetPrecincts || !isSd16Mode()) return;
   const byGeoid=new Map((data?.precincts||[]).map(r=>[String(r.geoid20),r]));
+  const districtResults=parseCandidateResults(data?.sd16_summary?.candidate_results);
+  const districtPinsley=contestCandidate(districtResults,'PINSLEY-Q7MX');
+  const districtPinsleyVotes=districtPinsley?.votes==null?null:Number(districtPinsley.votes);
   targetPrecincts.features.forEach(f=>{
     const p=f.properties||{};
     const row=byGeoid.get(String(p.geoid20));
@@ -1220,7 +1244,13 @@ async function loadSd16Election() {
     const coleman=contestCandidate(results,'COLEMAN-K4VN');
     const pinsleyPct=pinsley?.pct==null?null:Number(pinsley.pct);
     const colemanPct=coleman?.pct==null?null:Number(coleman.pct);
+    const pinsleyVotes=pinsley?.votes==null?null:Number(pinsley.votes);
     p.sd16_22g_margin_pp=(pinsleyPct!=null && colemanPct!=null) ? pinsleyPct-colemanPct : null;
+    p.sd16_pinsley_votes=pinsleyVotes;
+    p.sd16_pinsley_precinct_pct=pinsleyPct;
+    p.sd16_pinsley_share_of_total_pct=(pinsleyVotes!=null && districtPinsleyVotes>0)
+      ? 100*pinsleyVotes/districtPinsleyVotes
+      : null;
   });
   map.getSource('precincts').setData(targetPrecincts);
 }
@@ -1297,10 +1327,23 @@ function setLegend(layer) {
       <div class="legend-row"><span class="swatch" style="background:#9d2929"></span><span>Coleman +40 or more</span></div>
       <div class="legend-row"><span class="swatch" style="background:#d46767"></span><span>Coleman +20 to +40</span></div>
       <div class="legend-row"><span class="swatch" style="background:#eab8b8"></span><span>Coleman +5 to +20</span></div>
-      <div class="legend-row"><span class="swatch" style="background:#f3f0e6"></span><span>Within 5 points</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#f5dddd"></span><span>Coleman +0 to +5</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#dce7f4"></span><span>Pinsley +0 to +5</span></div>
       <div class="legend-row"><span class="swatch" style="background:#b7c9e2"></span><span>Pinsley +5 to +20</span></div>
       <div class="legend-row"><span class="swatch" style="background:#648bc1"></span><span>Pinsley +20 to +40</span></div>
       <div class="legend-row"><span class="swatch" style="background:#214f91"></span><span>Pinsley +40 or more</span></div>`;
+    return;
+  }
+  if (layer==='sd16_pinsley_density') {
+    legend.style.display='block';
+    legendTitle.textContent='Mark Pinsley votes by precinct · 2022 General · ACTUAL';
+    legendRows.innerHTML=`
+      <div class="legend-row"><span class="swatch" style="background:#eef4fb"></span><span>Under 300 votes</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#dce7f4"></span><span>300 to 449</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#b7c9e2"></span><span>450 to 599</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#8facd1"></span><span>600 to 749</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#648bc1"></span><span>750 to 899</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#214f91"></span><span>900 or more</span></div>`;
     return;
   }
   if (layer==='sd16_registration_26p') {
@@ -1436,9 +1479,22 @@ async function updateDataLayer() {
   if (layer==='sd16_22g') {
     await loadSd16Election();
     map.setPaintProperty('precinct-fill','fill-color',
-      ['step',['coalesce',['get','sd16_22g_margin_pp'],-999],
-        '#9d2929',-40,'#d46767',-20,'#eab8b8',-5,'#f3f0e6',5,'#b7c9e2',20,'#648bc1',40,'#214f91']);
+      ['case',
+        ['==',['get','sd16_22g_margin_pp'],null], 'rgba(255,255,255,0)',
+        ['==',['get','sd16_22g_margin_pp'],0], '#f3f0e6',
+        ['step',['get','sd16_22g_margin_pp'],
+          '#9d2929',-40,'#d46767',-20,'#eab8b8',-5,'#f5dddd',0,'#dce7f4',5,'#b7c9e2',20,'#648bc1',40,'#214f91']
+      ]);
     map.setPaintProperty('precinct-fill','fill-opacity',0.82);
+  } else if (layer==='sd16_pinsley_density') {
+    await loadSd16Election();
+    map.setPaintProperty('precinct-fill','fill-color',
+      ['case',
+        ['==',['get','sd16_pinsley_votes'],null], 'rgba(255,255,255,0)',
+        ['step',['get','sd16_pinsley_votes'],
+          '#eef4fb',300,'#dce7f4',450,'#b7c9e2',600,'#8facd1',750,'#648bc1',900,'#214f91']
+      ]);
+    map.setPaintProperty('precinct-fill','fill-opacity',0.84);
   } else if (layer==='sd16_registration_26p') {
     await loadSd16Registration();
     map.setPaintProperty('precinct-fill','fill-color',
@@ -1674,6 +1730,56 @@ async function updateSd16AreaPerformance() {
       ${areaRaceTable(summary,['PINSLEY-Q7MX','COLEMAN-K4VN'])}
       <div class="area-note">Percentages include every contest vote, including write-ins.</div>
       ${methodDetail}`;
+    areaPerformance.classList.add('is-visible');
+    return true;
+  }
+
+  if (layer==='sd16_pinsley_density') {
+    const data=await getSd16ElectionData();
+    const districtResults=parseCandidateResults(data?.sd16_summary?.candidate_results);
+    const districtPinsley=contestCandidate(districtResults,'PINSLEY-Q7MX');
+    const districtPinsleyVotes=districtPinsley?.votes==null?null:Number(districtPinsley.votes);
+
+    let label='PA STATE SENATE DISTRICT 16';
+    let sub='2022 General Election · Mark Pinsley vote density · ACTUAL';
+    let candidateResults=districtResults;
+    let precinctMeta='';
+
+    if (selectedSd16PrecinctGeoid) {
+      const row=(data?.precincts||[]).find(r=>String(r.geoid20)===String(selectedSd16PrecinctGeoid));
+      if (row) {
+        label=row.display_name||row.precinct_name||`PRECINCT ${row.geoid20}`;
+        sub='2022 General Election · Mark Pinsley · PRECINCT SNAPSHOT';
+        candidateResults=parseCandidateResults(row.candidate_results);
+        precinctMeta=sd16PrecinctMetaHtml(row);
+      }
+    } else if (selectedSd16HouseDistrict) {
+      const row=(data?.house_summaries||[]).find(r=>String(r.house_district)===String(selectedSd16HouseDistrict));
+      if (row) {
+        label=row.label;
+        sub=`2022 General Election · Mark Pinsley · ${Number(row.precinct_count||0).toLocaleString()} precincts`;
+        candidateResults=parseCandidateResults(row.candidate_results);
+      }
+    }
+
+    const pinsley=contestCandidate(candidateResults,'PINSLEY-Q7MX');
+    const pinsleyVotes=pinsley?.votes==null?null:Number(pinsley.votes);
+    const areaVotePct=pinsley?.pct==null?null:Number(pinsley.pct);
+    const contributionPct=(pinsleyVotes!=null && districtPinsleyVotes>0)
+      ? 100*pinsleyVotes/districtPinsleyVotes
+      : null;
+    const shareLabel=selectedSd16PrecinctGeoid ? 'Precinct vote share' : (selectedSd16HouseDistrict ? 'Area vote share' : 'District vote share');
+
+    areaPerformance.innerHTML=`<div class="area-performance-head">${selectedSd16PrecinctGeoid?'Precinct snapshot':'Area performance'}</div>
+      <div class="area-performance-area">${escapeHtml(label)}</div>
+      ${precinctMeta}
+      <div class="area-performance-sub">${escapeHtml(sub)}</div>
+      <div class="area-stat-grid">
+        <div>MARK PINSLEY votes</div><div class="v">${pinsleyVotes==null?'—':pinsleyVotes.toLocaleString()}</div>
+        <div>${shareLabel}</div><div class="v">${areaVotePct==null?'—':areaVotePct.toFixed(1)+'%'}</div>
+        <div>Share of Pinsley’s SD16 vote</div><div class="v">${contributionPct==null?'—':contributionPct.toFixed(2)+'%'}</div>
+      </div>
+      <div class="area-note">Map shading reflects raw Pinsley vote count. Vote share includes every contest vote, including write-ins.</div>`;
     areaPerformance.classList.add('is-visible');
     return true;
   }
@@ -2471,6 +2577,16 @@ map.on('load', async ()=>{
       selectedSd16HouseDistrict=null;
       updateAreaPerformance();
 
+      const densityPopup=dataLayer.value==='sd16_pinsley_density' ? `
+        <div style="margin-top:9px;padding-top:8px;border-top:1px solid #e3e3e3">
+          <div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#666;font-weight:850;margin-bottom:5px">MARK PINSLEY</div>
+          <div class="popup-grid">
+            <div>Votes</div><div class="v">${p.sd16_pinsley_votes==null?'—':Number(p.sd16_pinsley_votes).toLocaleString()}</div>
+            <div>Precinct vote share</div><div class="v">${p.sd16_pinsley_precinct_pct==null?'—':Number(p.sd16_pinsley_precinct_pct).toFixed(1)+'%'}</div>
+            <div>Share of Pinsley’s SD16 vote</div><div class="v">${p.sd16_pinsley_share_of_total_pct==null?'—':Number(p.sd16_pinsley_share_of_total_pct).toFixed(2)+'%'}</div>
+          </div>
+        </div>` : '';
+
       new maplibregl.Popup({maxWidth:'340px'})
         .setLngLat(e.lngLat)
         .setHTML(`<div class="popup-title">PRECINCT ${escapeHtml(p.display_name||p.precinct_name||p.geoid20||'')}</div>
@@ -2478,7 +2594,7 @@ map.on('load', async ()=>{
             <div>County</div><div class="v">${escapeHtml(p.county_name||'—')}</div>
             <div>Municipality</div><div class="v">${escapeHtml(p.municipality_name||'—')}</div>
             <div>PA House</div><div class="v">${escapeHtml(p.house_district||'—')}</div>
-          </div>`)
+          </div>${densityPopup}`)
         .addTo(map);
       return;
     }
