@@ -77,6 +77,48 @@
   }
   #sidebar { background:var(--panel); border-right:1px solid #ddd; padding:18px; overflow:auto; }
   #map { width:100%; height:100%; }
+  .bulk-launch { width:100%; margin-top:14px; padding:11px 10px; border:2px solid #111; background:#FFD52F; color:#111; font:800 11px/1 ui-sans-serif,system-ui,sans-serif; letter-spacing:.08em; text-transform:uppercase; cursor:pointer; box-shadow:3px 3px 0 #111; }
+  .bulk-launch:hover { transform:translate(-1px,-1px); box-shadow:4px 4px 0 #111; }
+  #bulkMapperPage { position:fixed; inset:0; z-index:10000; display:none; overflow:auto; background:#f4f2ec; }
+  #bulkMapperPage.is-open { display:block; }
+  .bulk-header { height:82px; display:flex; align-items:center; gap:16px; padding:0 22px; background:#fff; border-bottom:1px solid #ddd; }
+  .bulk-back { border:2px solid #111; background:#fff; color:#111; padding:9px 12px; font-weight:900; cursor:pointer; }
+  .bulk-title { font-family:'Bowlby One','Arial Black',sans-serif; font-size:23px; color:#FFD52F; -webkit-text-stroke:1.5px #111; paint-order:stroke fill; letter-spacing:.015em; }
+  .bulk-shell { width:min(1120px,calc(100% - 32px)); margin:28px auto 52px; }
+  .bulk-intro { margin-bottom:20px; }
+  .bulk-intro h1 { margin:0 0 7px; font-family:'Bowlby One','Arial Black',sans-serif; font-size:clamp(22px,3vw,34px); line-height:1.1; }
+  .bulk-intro p { margin:0; color:#555; font-size:14px; }
+  .bulk-card { background:#fff; border:2px solid #111; padding:22px; box-shadow:6px 6px 0 #111; }
+  .bulk-drop { display:block; border:2px dashed #777; padding:28px 18px; text-align:center; cursor:pointer; background:#faf9f5; }
+  .bulk-drop.is-dragging { border-color:#111; background:#fff6bf; }
+  .bulk-drop strong { display:block; font-size:15px; margin-bottom:5px; }
+  .bulk-drop span { color:#666; font-size:12px; }
+  #bulkFileInput { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
+  .bulk-file-meta { min-height:22px; margin-top:12px; font-size:12px; color:#555; }
+  .bulk-actions { display:flex; align-items:center; gap:12px; margin-top:12px; flex-wrap:wrap; }
+  .bulk-primary { border:2px solid #111; background:#FFD52F; color:#111; padding:11px 17px; font-weight:900; letter-spacing:.04em; text-transform:uppercase; cursor:pointer; box-shadow:3px 3px 0 #111; }
+  .bulk-primary:disabled { opacity:.45; cursor:not-allowed; box-shadow:none; }
+  .bulk-secondary { border:2px solid #111; background:#fff; color:#111; padding:10px 15px; font-weight:900; cursor:pointer; }
+  .bulk-note { margin-top:15px; font-size:11px; line-height:1.45; color:#666; }
+  .bulk-progress { display:none; margin-top:20px; }
+  .bulk-progress.is-visible { display:block; }
+  .bulk-progress-track { height:12px; border:2px solid #111; background:#fff; }
+  .bulk-progress-bar { width:0; height:100%; background:#FFD52F; transition:width .2s ease; }
+  .bulk-progress-text { margin-top:7px; font-size:12px; font-weight:800; }
+  .bulk-results { display:none; margin-top:28px; }
+  .bulk-results.is-visible { display:block; }
+  .bulk-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:14px; }
+  .bulk-stat { background:#fff; border:2px solid #111; padding:13px; }
+  .bulk-stat strong { display:block; font-size:23px; }
+  .bulk-stat span { font-size:10px; font-weight:800; letter-spacing:.08em; color:#666; }
+  .bulk-table-wrap { overflow:auto; max-height:440px; border:2px solid #111; background:#fff; }
+  .bulk-table { width:100%; border-collapse:collapse; white-space:nowrap; font-size:11px; }
+  .bulk-table th { position:sticky; top:0; z-index:1; background:#111; color:#fff; text-align:left; padding:9px; letter-spacing:.05em; text-transform:uppercase; }
+  .bulk-table td { padding:8px 9px; border-bottom:1px solid #ddd; }
+  .bulk-status-MATCHED { color:#18733a; font-weight:900; }
+  .bulk-status-REVIEW { color:#9a6500; font-weight:900; }
+  .bulk-status-UNMATCHED { color:#a12622; font-weight:900; }
+  @media (max-width:700px) { .bulk-summary{grid-template-columns:repeat(2,1fr)} .bulk-title{font-size:17px} .bulk-card{padding:15px} }
   .eyebrow { font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:800; margin-bottom:6px; }
   .group { margin-bottom:20px; }
   label { font-size:12px; font-weight:750; display:block; margin:0 0 6px; }
@@ -423,10 +465,48 @@
       <div>The use of artificial intelligence was limited to coding assistance, technical implementation, and debugging in areas beyond the creator’s existing technical skill set.</div>
       <div>For additional map files, sources, and data visualization resources, visit <a href="https://docs.google.com/document/d/1YwSZmEgexciNE9ySvtAHgrhWAqDHIBn6Hj_Qdpg8xbI/edit?tab=t.0" target="_blank" rel="noopener noreferrer">Davy’s Map Resources</a>.</div>
       <div class="map-view-count">Map views: <span id="mapViewCount">—</span></div>
+      <button id="bulkMapperLaunch" class="bulk-launch" type="button">Bulk Precinct Mapper</button>
     </div>
   </aside>
   <main id="map"></main>
 </div>
+
+<section id="bulkMapperPage" aria-hidden="true">
+  <div class="bulk-header">
+    <button id="bulkMapperBack" class="bulk-back" type="button">← MAP</button>
+    <div class="bulk-title">BULK PRECINCT MAPPER</div>
+  </div>
+  <div class="bulk-shell">
+    <div class="bulk-intro">
+      <h1>MATCH STATEWIDE PRECINCTS AND ELECTORAL DISTRICTS</h1>
+      <p>Upload a CSV and download the same table with Pennsylvania geography appended.</p>
+    </div>
+    <div class="bulk-card">
+      <label id="bulkDrop" class="bulk-drop" for="bulkFileInput">
+        <strong>DROP A CSV HERE OR CLICK TO CHOOSE</strong>
+        <span>Required columns: address, city, state, and ZIP. State may be blank and will default to PA.</span>
+      </label>
+      <input id="bulkFileInput" type="file" accept=".csv,text/csv">
+      <div id="bulkFileMeta" class="bulk-file-meta">No file selected.</div>
+      <div class="bulk-actions">
+        <button id="bulkMatchBtn" class="bulk-primary" type="button" disabled>Match Addresses</button>
+        <button id="bulkResetBtn" class="bulk-secondary" type="button">Reset</button>
+      </div>
+      <div class="bulk-note">The matcher recognizes common header variations such as street_address, address_1, municipality, zipcode, and postal_code. Precincts use 2020 Census VTD boundaries; electoral districts use the current Census geography vintage.</div>
+      <div id="bulkProgress" class="bulk-progress">
+        <div class="bulk-progress-track"><div id="bulkProgressBar" class="bulk-progress-bar"></div></div>
+        <div id="bulkProgressText" class="bulk-progress-text"></div>
+      </div>
+    </div>
+    <div id="bulkResults" class="bulk-results">
+      <div id="bulkSummary" class="bulk-summary"></div>
+      <div class="bulk-actions" style="margin:0 0 14px">
+        <button id="bulkDownloadBtn" class="bulk-primary" type="button">Download Matched CSV</button>
+      </div>
+      <div class="bulk-table-wrap"><table class="bulk-table"><thead id="bulkTableHead"></thead><tbody id="bulkTableBody"></tbody></table></div>
+    </div>
+  </div>
+</section>
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script>
@@ -2823,6 +2903,178 @@ geoType.addEventListener('change',async ()=>{
   populateAreas();
   updateModeUi();
   await loadGeography(true);
+});
+
+// BULK PRECINCT MAPPER · statewide CSV enrichment
+const bulkMapperPage=document.getElementById('bulkMapperPage');
+const bulkMapperLaunch=document.getElementById('bulkMapperLaunch');
+const bulkMapperBack=document.getElementById('bulkMapperBack');
+const bulkFileInput=document.getElementById('bulkFileInput');
+const bulkDrop=document.getElementById('bulkDrop');
+const bulkFileMeta=document.getElementById('bulkFileMeta');
+const bulkMatchBtn=document.getElementById('bulkMatchBtn');
+const bulkResetBtn=document.getElementById('bulkResetBtn');
+const bulkProgress=document.getElementById('bulkProgress');
+const bulkProgressBar=document.getElementById('bulkProgressBar');
+const bulkProgressText=document.getElementById('bulkProgressText');
+const bulkResults=document.getElementById('bulkResults');
+const bulkSummary=document.getElementById('bulkSummary');
+const bulkTableHead=document.getElementById('bulkTableHead');
+const bulkTableBody=document.getElementById('bulkTableBody');
+const bulkDownloadBtn=document.getElementById('bulkDownloadBtn');
+const BULK_FUNCTION_URL=`${SUPABASE_URL}/functions/v1/bulk-precinct-mapper`;
+const BULK_APPENDED_COLUMNS=['normalized_address','normalized_city','normalized_state','normalized_zip','match_status','match_warning','county','municipality','precinct_name','precinct_geoid','pa_house_district','pa_senate_district','congressional_district'];
+let bulkParsed=null;
+let bulkMatched=[];
+
+function openBulkMapper() {
+  bulkMapperPage.classList.add('is-open');
+  bulkMapperPage.setAttribute('aria-hidden','false');
+  history.replaceState(null,'',`${location.pathname}${location.search}#bulk-precinct-mapper`);
+}
+function closeBulkMapper() {
+  bulkMapperPage.classList.remove('is-open');
+  bulkMapperPage.setAttribute('aria-hidden','true');
+  history.replaceState(null,'',`${location.pathname}${location.search}`);
+}
+bulkMapperLaunch.addEventListener('click',openBulkMapper);
+bulkMapperBack.addEventListener('click',closeBulkMapper);
+if (location.hash==='#bulk-precinct-mapper') openBulkMapper();
+
+function parseCsv(text) {
+  const rows=[];
+  let row=[],field='',quoted=false;
+  const source=String(text||'').replace(/^\uFEFF/,'');
+  for (let i=0;i<source.length;i++) {
+    const ch=source[i];
+    if (quoted) {
+      if (ch==='"' && source[i+1]==='"') { field+='"'; i++; }
+      else if (ch==='"') quoted=false;
+      else field+=ch;
+    } else if (ch==='"' && field==='') quoted=true;
+    else if (ch===',') { row.push(field); field=''; }
+    else if (ch==='\n') { row.push(field.replace(/\r$/,'')); rows.push(row); row=[]; field=''; }
+    else field+=ch;
+  }
+  if (field.length || row.length) { row.push(field.replace(/\r$/,'')); rows.push(row); }
+  while (rows.length && rows[rows.length-1].every(v=>!String(v).trim())) rows.pop();
+  if (rows.length<2) throw new Error('The CSV needs a header row and at least one address.');
+  const headers=rows[0].map((v,i)=>String(v).trim() || `column_${i+1}`);
+  const records=rows.slice(1).filter(r=>r.some(v=>String(v).trim())).map(values=>Object.fromEntries(headers.map((h,i)=>[h,values[i]??''])));
+  return {headers,records};
+}
+
+function normalizedHeader(value) { return String(value).toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,''); }
+function detectBulkColumns(headers) {
+  const normalized=new Map(headers.map(h=>[normalizedHeader(h),h]));
+  const pick=(aliases)=>aliases.map(a=>normalized.get(a)).find(Boolean)||null;
+  return {
+    address:pick(['address','street_address','streetaddress','address_1','address1','street','residence_address']),
+    city:pick(['city','municipality','mailing_city','residence_city']),
+    state:pick(['state','state_code','state_abbreviation','st']),
+    zip:pick(['zip','zipcode','zip_code','postal_code','postalcode','residence_zip'])
+  };
+}
+
+async function loadBulkFile(file) {
+  bulkResults.classList.remove('is-visible');
+  bulkProgress.classList.remove('is-visible');
+  bulkMatched=[];
+  try {
+    if (!file || !/\.csv$/i.test(file.name)) throw new Error('Choose a CSV file.');
+    const parsed=parseCsv(await file.text());
+    const columns=detectBulkColumns(parsed.headers);
+    const missing=Object.entries(columns).filter(([,v])=>!v).map(([k])=>k);
+    if (missing.length) throw new Error(`Missing required column${missing.length===1?'':'s'}: ${missing.join(', ')}.`);
+    bulkParsed={...parsed,columns,fileName:file.name};
+    bulkFileMeta.textContent=`${file.name} · ${parsed.records.length.toLocaleString()} address row${parsed.records.length===1?'':'s'} · columns recognized`;
+    bulkMatchBtn.disabled=false;
+  } catch (err) {
+    bulkParsed=null;
+    bulkMatchBtn.disabled=true;
+    bulkFileMeta.textContent=err.message||'Could not read this CSV.';
+  }
+}
+
+bulkFileInput.addEventListener('change',()=>loadBulkFile(bulkFileInput.files?.[0]));
+['dragenter','dragover'].forEach(type=>bulkDrop.addEventListener(type,e=>{e.preventDefault();bulkDrop.classList.add('is-dragging')}));
+['dragleave','drop'].forEach(type=>bulkDrop.addEventListener(type,e=>{e.preventDefault();bulkDrop.classList.remove('is-dragging')}));
+bulkDrop.addEventListener('drop',e=>{const file=e.dataTransfer?.files?.[0];if(file)loadBulkFile(file)});
+
+function resetBulkMapper() {
+  bulkFileInput.value=''; bulkParsed=null; bulkMatched=[];
+  bulkFileMeta.textContent='No file selected.'; bulkMatchBtn.disabled=true;
+  bulkProgress.classList.remove('is-visible'); bulkResults.classList.remove('is-visible');
+  bulkProgressBar.style.width='0%'; bulkTableHead.innerHTML=''; bulkTableBody.innerHTML='';
+}
+bulkResetBtn.addEventListener('click',resetBulkMapper);
+
+async function matchBulkChunk(rows) {
+  const response=await fetch(BULK_FUNCTION_URL,{
+    method:'POST',
+    headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Content-Type':'application/json'},
+    body:JSON.stringify({rows})
+  });
+  const payload=await response.json().catch(()=>({}));
+  if (!response.ok) throw new Error(payload.error||`Matcher returned ${response.status}.`);
+  return payload.results||[];
+}
+
+function renderBulkResults() {
+  const counts={MATCHED:0,REVIEW:0,UNMATCHED:0};
+  bulkMatched.forEach(r=>counts[r.match_status]=(counts[r.match_status]||0)+1);
+  bulkSummary.innerHTML=[['TOTAL',bulkMatched.length],['MATCHED',counts.MATCHED],['REVIEW',counts.REVIEW],['UNMATCHED',counts.UNMATCHED]].map(([label,value])=>`<div class="bulk-stat"><strong>${Number(value).toLocaleString()}</strong><span>${label}</span></div>`).join('');
+  const previewColumns=['address','city','zip','match_status','county','municipality','precinct_name','pa_house_district','pa_senate_district','congressional_district'];
+  const sourceColumns=bulkParsed.columns;
+  const displayColumns=previewColumns.map(c=>({key:c,source:sourceColumns[c]||c,label:c.replaceAll('_',' ')}));
+  bulkTableHead.innerHTML=`<tr>${displayColumns.map(c=>`<th>${escapeHtml(c.label)}</th>`).join('')}</tr>`;
+  bulkTableBody.innerHTML=bulkMatched.slice(0,250).map(r=>`<tr>${displayColumns.map(c=>{
+    const value=r[c.source]??r[c.key]??'';
+    const cls=c.key==='match_status'?`bulk-status-${value}`:'';
+    return `<td class="${cls}">${escapeHtml(value)}</td>`;
+  }).join('')}</tr>`).join('');
+  bulkResults.classList.add('is-visible');
+}
+
+bulkMatchBtn.addEventListener('click',async()=>{
+  if (!bulkParsed) return;
+  bulkMatchBtn.disabled=true; bulkResults.classList.remove('is-visible');
+  bulkProgress.classList.add('is-visible'); bulkProgressBar.style.width='0%';
+  const {records,columns}=bulkParsed;
+  const requests=records.map((record,index)=>({
+    row_id:index,
+    address:String(record[columns.address]||''), city:String(record[columns.city]||''),
+    state:String(record[columns.state]||'PA'), zip:String(record[columns.zip]||'')
+  }));
+  const chunks=[]; for(let i=0;i<requests.length;i+=25) chunks.push(requests.slice(i,i+25));
+  const returned=[];
+  try {
+    for(let i=0;i<chunks.length;i+=2) {
+      const batch=await Promise.all(chunks.slice(i,i+2).map(matchBulkChunk));
+      returned.push(...batch.flat());
+      const done=Math.min((i+2)*25,requests.length);
+      bulkProgressBar.style.width=`${Math.round(100*done/requests.length)}%`;
+      bulkProgressText.textContent=`Matched ${done.toLocaleString()} of ${requests.length.toLocaleString()} addresses…`;
+    }
+    const byId=new Map(returned.map(row=>[Number(row.row_id),row]));
+    bulkMatched=records.map((record,index)=>({...record,...(byId.get(index)||{match_status:'UNMATCHED',match_warning:'No result returned.'})}));
+    bulkProgressBar.style.width='100%'; bulkProgressText.textContent=`Complete · ${bulkMatched.length.toLocaleString()} rows processed`;
+    renderBulkResults();
+  } catch(err) {
+    bulkProgressText.textContent=`Stopped: ${err.message||'Matching failed.'}`;
+  } finally { bulkMatchBtn.disabled=false; }
+});
+
+function csvCell(value) { const s=String(value??''); return /[",\r\n]/.test(s)?`"${s.replaceAll('"','""')}"`:s; }
+bulkDownloadBtn.addEventListener('click',()=>{
+  if (!bulkMatched.length) return;
+  const original=bulkParsed.headers.filter(h=>!BULK_APPENDED_COLUMNS.includes(h));
+  const columns=[...original,...BULK_APPENDED_COLUMNS];
+  const csv=[columns.map(csvCell).join(','),...bulkMatched.map(row=>columns.map(c=>csvCell(row[c])).join(','))].join('\r\n');
+  const blob=new Blob(['\uFEFF',csv],{type:'text/csv;charset=utf-8'});
+  const link=document.createElement('a'); link.href=URL.createObjectURL(blob);
+  link.download=`${bulkParsed.fileName.replace(/\.csv$/i,'')}-precincts.csv`; link.click();
+  setTimeout(()=>URL.revokeObjectURL(link.href),1000);
 });
 geoValue.addEventListener('change',()=>{
   updateModeUi();
