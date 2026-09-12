@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>DAVY'S MAP EXPLORER v4.8</title>
+<title>DAVY'S MAP EXPLORER v4.9</title>
 <link rel="icon" type="image/png" href="brand-image.png">
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Knewave&display=swap" rel="stylesheet">
@@ -402,7 +402,7 @@
       onerror="this.style.display='none'"
     >
     <span class="brand-title">DAVY'S MAP EXPLORER</span>
-    <span class="version-tag">v4.8</span>
+    <span class="version-tag">v4.9</span>
   </header>
   <aside id="sidebar">
     <div class="group" id="lookupGroup">
@@ -446,6 +446,8 @@
         <option value="cd8_congress_26p" hidden>CD 8 · 2026 Primary · Chris Rabb vs Sharif Street vs Ala Stanford</option>
         <option value="cd8_seth_rabb_shift" hidden>CD 8 ∩ PA-03 · Seth Anderson-Oberman → Chris Rabb vote concentration</option>
         <option value="cd8_rabb_overperformance" hidden>CD 8 ∩ PA-03 · Rabb over-performance votes</option>
+        <option value="cd8_mail_shift" hidden>CD 8 ∩ PA-03 · Rabb vs Seth · MAIL vote concentration</option>
+        <option value="cd8_eday_shift" hidden>CD 8 ∩ PA-03 · Rabb vs Seth · EDAY vote concentration</option>
         <option value="harris_trump_24g">2024 General · Kamala Harris vs Donald Trump · margin</option>
         <option value="dougherty_24g">2024 General · Sean Dougherty vs Aizaz Gill · PA House 172 margin</option>
         <option value="bernie_hillary">2016 Primary · Bernie Sanders vs Hillary Clinton · margin</option>
@@ -556,7 +558,7 @@
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script>
-// DAVY'S MAP EXPLORER v4.8
+// DAVY'S MAP EXPLORER v4.9
 // LIVE DATA: Supabase project THE PORTAL.
 // This is a publishable browser key, not a service-role or secret key.
 const SUPABASE_URL = 'https://bxrxpiqyfnbahmqglkkc.supabase.co';
@@ -613,7 +615,7 @@ let wfpPenetrationRowsCache = null;
 let wfpPenetrationRowsPromise = null;
 const contestRowsCache = new Map();
 const contestRowsPromise = new Map();
-const CD8_ELECTION_DATA = {"council23":{"divisions":{"1101":[9,30],"1102":[19,63],"1103":[7,31],"1104":[9,16],"1105":[15,37],"1106":[11,25],"1107":[10,68],"1108":[24,56],"1109":[53,48],"1110":[13,22],"1111":[17,80],"1112":[31,23],"1113":[22,35],"1114":[18,44],"1115":[11,35],"1116":[34,56],"1117":[21,23],"1118":[12,47],"1119":[15,79],"1120":[26,71],"1201":[24,85],"1202":[17,69],"1203":[18,57],"1204":[12,28],"1205":[43,137],"1206":[29,69],"1207":[54,71],"1208":[77,71],"1209":[83,42],"1210":[23,65],"1211":[62,74],"1212":[38,86],"1213":[30,61],"1214":[32,74],"1215":[101,88],"1216":[136,82],"1217":[77,85],"1218":[55,52],"1219":[48,40],"1220":[54,59],"1221":[42,32],"1222":[125,81],"1223":[193,68],"1224":[64,29],"1301":[59,80],"1302":[59,41],"1303":[66,47],"1304":[136,86],"1305":[71,65],"1306":[17,64],"1307":[16,52],"1308":[5,50],"1309":[18,57],"1310":[19,60],"1311":[17,42],"1312":[18,41],"1313":[30,50],"1314":[26,70],"1315":[18,56],"1316":[21,84],"1317":[24,68],"1318":[24,159],"1319":[9,75],"1320":[19,67],"1321":[13,61],"1322":[29,82],"1323":[14,53],"1324":[18,48],"1325":[25,41],"1701":[30,93],"1702":[28,87],"1703":[30,119],"1704":[26,87],"1705":[21,85],"1706":[28,57],"1707":[38,72],"1708":[17,63],"1709":[24,68],"1710":[32,110],"1711":[23,77],"1712":[30,115],"1713":[17,80],"1714":[30,93],"1715":[42,58],"1716":[9,55],"1717":[22,67],"1718":[30,75],"1719":[24,98],"1720":[29,73],"1721":[25,139],"1722":[42,113],"1723":[19,61],"1724":[27,89],"1725":[24,63],"1726":[3,32],"1727":[20,64],"1728":[15,64],"1729":[28,62],"2201":[406,75],"2202":[323,89],"2203":[139,69],"2204":[159,77],"2205":[187,98],"2206":[291,92],"2207":[221,102],"2208":[127,89],"2209":[104,83],"2210":[126,72],"2211":[83,83],"2212":[51,97],"2213":[98,72],"2214":[98,96],"2215":[71,91],"2216":[150,76],"2217":[161,98],"2218":[85,94],"2219":[110,99],"2220":[56,86],"2221":[38,104],"2222":[31,126],"2223":[169,76],"2224":[119,121],"2225":[61,117],"2226":[70,131],"2227":[45,167],"2228":[45,128],"2229":[46,174],"4212":[14,17],"4213":[24,65],"4214":[17,42],"4216":[19,35],"4217":[15,50],"4220":[20,44],"4221":[13,18],"4901":[14,31],"4904":[22,62],"4905":[31,80],"4909":[31,100],"4910":[37,74],"4911":[40,45],"4912":[27,85],"4913":[16,38],"4914":[19,57],"4915":[22,64],"4919":[24,64],"5901":[26,67],"5902":[39,93],"5903":[35,67],"5904":[92,166],"5905":[36,111],"5906":[23,47],"5907":[43,33],"5908":[36,81],"5909":[30,58],"5910":[77,89],"5911":[41,80],"5912":[90,55],"5913":[46,86],"5914":[45,39],"5915":[35,39],"5916":[33,50],"5917":[192,118],"5918":[57,103],"5919":[211,68],"5920":[21,30],"5921":[147,51],"5922":[172,59],"5923":[110,61],"5924":[139,52],"5925":[104,71],"0901":[206,106],"0902":[221,85],"0903":[328,83],"0904":[206,74],"0905":[228,78],"0906":[231,100],"0907":[146,76],"0908":[134,46],"0909":[312,103],"0910":[257,126],"0911":[298,125],"0912":[286,89],"0913":[299,70],"0914":[222,51],"0915":[281,73],"0916":[83,95],"0917":[63,78]},"totals":[{"candidate_id":"ANDERSONOBERMAN-MK2E","candidate_name":"SETH ANDERSON-OBERMAN","votes":13074},{"candidate_id":"BASS-U9Q1","candidate_name":"CINDY BASS","votes":13497},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":37}],"wardTotals":{"11":[{"candidate_id":"ANDERSONOBERMAN-MK2E","candidate_name":"SETH ANDERSON-OBERMAN","votes":377},{"candidate_id":"BASS-U9Q1","candidate_name":"CINDY BASS","votes":889},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":0}],"12":[{"candidate_id":"ANDERSONOBERMAN-MK2E","candidate_name":"SETH ANDERSON-OBERMAN","votes":1437},{"candidate_id":"BASS-U9Q1","candidate_name":"CINDY BASS","votes":1605},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":2}],"13":[{"candidate_id":"ANDERSONOBERMAN-MK2E","candidate_name":"SETH ANDERSON-OBERMAN","votes":771},{"candidate_id":"BASS-U9Q1","candidate_name":"CINDY BASS","votes":1599},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":1}],"17":[{"candidate_id":"ANDERSONOBERMAN-MK2E","candidate_name":"SETH ANDERSON-OBERMAN","votes":733},{"candidate_id":"BASS-U9Q1","candidate_name":"CINDY BASS","votes":2319},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":6}],"22":[{"candidate_id":"ANDERSONOBERMAN-MK2E","candidate_name":"SETH ANDERSON-OBERMAN","votes":3670},{"candidate_id":"BASS-U9Q1","candidate_name":"CINDY BASS","votes":2882},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":14}],"42":[{"candidate_id":"ANDERSONOBERMAN-MK2E","candidate_name":"SETH ANDERSON-OBERMAN","votes":122},{"candidate_id":"BASS-U9Q1","candidate_name":"CINDY BASS","votes":271},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":0}],"49":[{"candidate_id":"ANDERSONOBERMAN-MK2E","candidate_name":"SETH ANDERSON-OBERMAN","votes":283},{"candidate_id":"BASS-U9Q1","candidate_name":"CINDY BASS","votes":700},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":2}],"59":[{"candidate_id":"ANDERSONOBERMAN-MK2E","candidate_name":"SETH ANDERSON-OBERMAN","votes":1880},{"candidate_id":"BASS-U9Q1","candidate_name":"CINDY BASS","votes":1774},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":7}],"09":[{"candidate_id":"ANDERSONOBERMAN-MK2E","candidate_name":"SETH ANDERSON-OBERMAN","votes":3801},{"candidate_id":"BASS-U9Q1","candidate_name":"CINDY BASS","votes":1458},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":5}]}},"mayor23":{"divisions":{"1101":[7,27,5],"1102":[3,72,11],"1103":[6,22,5],"1104":[3,25,6],"1105":[3,33,7],"1106":[9,27,5],"1107":[10,66,8],"1108":[14,58,17],"1109":[9,87,10],"1110":[3,23,1],"1111":[14,75,10],"1112":[9,45,9],"1113":[10,65,11],"1114":[4,54,5],"1115":[7,28,4],"1116":[8,70,11],"1117":[3,32,5],"1118":[3,49,3],"1119":[4,80,9],"1120":[12,89,11],"1201":[13,101,12],"1202":[4,85,12],"1203":[4,65,1],"1204":[2,40,7],"1205":[37,132,18],"1206":[18,67,10],"1207":[25,82,11],"1208":[47,94,17],"1209":[65,59,21],"1210":[10,69,12],"1211":[38,76,23],"1212":[23,83,12],"1213":[11,82,10],"1214":[20,76,8],"1215":[70,104,29],"1216":[94,91,50],"1217":[32,103,21],"1218":[35,51,5],"1219":[31,51,8],"1220":[41,59,15],"1221":[9,55,13],"1222":[65,90,46],"1223":[116,83,63],"1224":[20,51,13],"1301":[26,92,20],"1302":[34,57,13],"1303":[28,77,6],"1304":[84,93,33],"1305":[52,62,25],"1306":[11,62,7],"1307":[4,57,9],"1308":[4,55,11],"1309":[13,51,4],"1310":[12,58,9],"1311":[5,43,5],"1312":[12,50,14],"1313":[19,48,7],"1314":[8,66,12],"1315":[9,55,5],"1316":[14,67,11],"1317":[8,74,10],"1318":[9,134,8],"1319":[10,75,11],"1320":[10,71,8],"1321":[12,45,7],"1322":[13,77,9],"1323":[6,48,8],"1324":[5,49,1],"1325":[6,51,6],"1701":[12,95,13],"1702":[17,107,10],"1703":[21,107,16],"1704":[16,86,10],"1705":[8,98,10],"1706":[4,73,10],"1707":[7,80,16],"1708":[6,79,3],"1709":[6,79,8],"1710":[8,105,14],"1711":[10,87,10],"1712":[8,117,14],"1713":[6,87,13],"1714":[12,109,5],"1715":[7,83,9],"1716":[7,56,4],"1717":[8,77,10],"1718":[13,96,15],"1719":[12,103,14],"1720":[16,86,12],"1721":[11,130,16],"1722":[21,119,21],"1723":[12,54,11],"1724":[11,70,5],"1725":[10,69,9],"1726":[4,25,6],"1727":[9,84,6],"1728":[7,68,9],"1729":[12,79,5],"2201":[262,69,159],"2202":[180,73,168],"2203":[77,68,58],"2204":[81,74,78],"2205":[117,96,82],"2206":[192,98,85],"2207":[134,115,96],"2208":[70,100,45],"2209":[58,93,39],"2210":[66,83,45],"2211":[57,72,46],"2212":[36,98,20],"2213":[43,108,22],"2214":[67,95,26],"2215":[37,114,24],"2216":[106,65,65],"2217":[106,95,65],"2218":[55,98,41],"2219":[63,110,25],"2220":[48,80,18],"2221":[26,110,14],"2222":[14,120,22],"2223":[81,73,104],"2224":[65,93,87],"2225":[32,120,29],"2226":[21,132,26],"2227":[19,157,23],"2228":[15,136,13],"2229":[24,146,29],"4212":[9,40,7],"4213":[11,83,12],"4214":[13,49,12],"4216":[8,53,10],"4217":[14,54,15],"4220":[15,56,10],"4221":[14,34,7],"4901":[15,35,8],"4904":[8,73,11],"4905":[15,93,10],"4909":[24,117,11],"4910":[13,81,17],"4911":[17,76,10],"4912":[12,97,7],"4913":[10,38,12],"4914":[7,82,9],"4915":[11,75,2],"4919":[13,96,11],"5901":[7,68,9],"5902":[18,111,9],"5903":[14,71,11],"5904":[32,166,52],"5905":[26,128,13],"5906":[10,59,9],"5907":[17,54,7],"5908":[23,91,13],"5909":[6,65,13],"5910":[29,118,15],"5911":[27,76,14],"5912":[40,73,21],"5913":[25,95,10],"5914":[25,53,8],"5915":[13,54,7],"5916":[25,43,10],"5917":[118,121,72],"5918":[19,94,28],"5919":[162,75,45],"5920":[24,15,8],"5921":[91,54,50],"5922":[101,64,65],"5923":[79,72,21],"5924":[88,57,59],"5925":[83,62,41],"0901":[94,93,131],"0902":[89,78,135],"0903":[172,76,179],"0904":[118,36,142],"0905":[97,49,148],"0906":[77,47,203],"0907":[25,31,184],"0908":[39,17,111],"0909":[132,24,259],"0910":[71,31,286],"0911":[107,72,252],"0912":[137,67,159],"0913":[205,48,121],"0914":[111,36,138],"0915":[137,46,178],"0916":[58,96,34],"0917":[21,75,25]},"totals":[{"candidate_id":"PARKER-TVIR","candidate_name":"CHERELLE L PARKER","votes":13985},{"candidate_id":"DELEON-YW1K","candidate_name":"JAMES M DELEON","votes":243},{"candidate_id":"RHYNHART-5FGJ","candidate_name":"REBECCA RHYNHART","votes":6183},{"candidate_id":"GRAY-6R5K","candidate_name":"DELSCIA GRAY","votes":90},{"candidate_id":"BROWN-U167","candidate_name":"AMEN BROWN","votes":447},{"candidate_id":"BROWN-5D3W","candidate_name":"JEFF BROWN","votes":3261},{"candidate_id":"BLOOM-Y1MN","candidate_name":"WARREN BLOOM","votes":63},{"candidate_id":"DOMB-7TZC","candidate_name":"ALLAN DOMB","votes":2009},{"candidate_id":"GYM-EJ2K","candidate_name":"HELEN GYM","votes":6859},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":19}],"wardTotals":{"11":[{"candidate_id":"PARKER-TVIR","candidate_name":"CHERELLE L PARKER","votes":1027},{"candidate_id":"DELEON-YW1K","candidate_name":"JAMES M DELEON","votes":19},{"candidate_id":"RHYNHART-5FGJ","candidate_name":"REBECCA RHYNHART","votes":153},{"candidate_id":"GRAY-6R5K","candidate_name":"DELSCIA GRAY","votes":14},{"candidate_id":"BROWN-U167","candidate_name":"AMEN BROWN","votes":42},{"candidate_id":"BROWN-5D3W","candidate_name":"JEFF BROWN","votes":266},{"candidate_id":"BLOOM-Y1MN","candidate_name":"WARREN BLOOM","votes":9},{"candidate_id":"DOMB-7TZC","candidate_name":"ALLAN DOMB","votes":172},{"candidate_id":"GYM-EJ2K","candidate_name":"HELEN GYM","votes":141},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":2}],"12":[{"candidate_id":"PARKER-TVIR","candidate_name":"CHERELLE L PARKER","votes":1849},{"candidate_id":"DELEON-YW1K","candidate_name":"JAMES M DELEON","votes":32},{"candidate_id":"RHYNHART-5FGJ","candidate_name":"REBECCA RHYNHART","votes":437},{"candidate_id":"GRAY-6R5K","candidate_name":"DELSCIA GRAY","votes":11},{"candidate_id":"BROWN-U167","candidate_name":"AMEN BROWN","votes":57},{"candidate_id":"BROWN-5D3W","candidate_name":"JEFF BROWN","votes":440},{"candidate_id":"BLOOM-Y1MN","candidate_name":"WARREN BLOOM","votes":4},{"candidate_id":"DOMB-7TZC","candidate_name":"ALLAN DOMB","votes":186},{"candidate_id":"GYM-EJ2K","candidate_name":"HELEN GYM","votes":830},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":3}],"13":[{"candidate_id":"PARKER-TVIR","candidate_name":"CHERELLE L PARKER","votes":1617},{"candidate_id":"DELEON-YW1K","candidate_name":"JAMES M DELEON","votes":35},{"candidate_id":"RHYNHART-5FGJ","candidate_name":"REBECCA RHYNHART","votes":259},{"candidate_id":"GRAY-6R5K","candidate_name":"DELSCIA GRAY","votes":9},{"candidate_id":"BROWN-U167","candidate_name":"AMEN BROWN","votes":48},{"candidate_id":"BROWN-5D3W","candidate_name":"JEFF BROWN","votes":468},{"candidate_id":"BLOOM-Y1MN","candidate_name":"WARREN BLOOM","votes":8},{"candidate_id":"DOMB-7TZC","candidate_name":"ALLAN DOMB","votes":240},{"candidate_id":"GYM-EJ2K","candidate_name":"HELEN GYM","votes":414},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":2}],"17":[{"candidate_id":"PARKER-TVIR","candidate_name":"CHERELLE L PARKER","votes":2508},{"candidate_id":"DELEON-YW1K","candidate_name":"JAMES M DELEON","votes":39},{"candidate_id":"RHYNHART-5FGJ","candidate_name":"REBECCA RHYNHART","votes":304},{"candidate_id":"GRAY-6R5K","candidate_name":"DELSCIA GRAY","votes":14},{"candidate_id":"BROWN-U167","candidate_name":"AMEN BROWN","votes":111},{"candidate_id":"BROWN-5D3W","candidate_name":"JEFF BROWN","votes":557},{"candidate_id":"BLOOM-Y1MN","candidate_name":"WARREN BLOOM","votes":10},{"candidate_id":"DOMB-7TZC","candidate_name":"ALLAN DOMB","votes":256},{"candidate_id":"GYM-EJ2K","candidate_name":"HELEN GYM","votes":301},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":2}],"22":[{"candidate_id":"PARKER-TVIR","candidate_name":"CHERELLE L PARKER","votes":2891},{"candidate_id":"DELEON-YW1K","candidate_name":"JAMES M DELEON","votes":32},{"candidate_id":"RHYNHART-5FGJ","candidate_name":"REBECCA RHYNHART","votes":1554},{"candidate_id":"GRAY-6R5K","candidate_name":"DELSCIA GRAY","votes":13},{"candidate_id":"BROWN-U167","candidate_name":"AMEN BROWN","votes":53},{"candidate_id":"BROWN-5D3W","candidate_name":"JEFF BROWN","votes":550},{"candidate_id":"BLOOM-Y1MN","candidate_name":"WARREN BLOOM","votes":12},{"candidate_id":"DOMB-7TZC","candidate_name":"ALLAN DOMB","votes":415},{"candidate_id":"GYM-EJ2K","candidate_name":"HELEN GYM","votes":2152},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":5}],"42":[{"candidate_id":"PARKER-TVIR","candidate_name":"CHERELLE L PARKER","votes":369},{"candidate_id":"DELEON-YW1K","candidate_name":"JAMES M DELEON","votes":8},{"candidate_id":"RHYNHART-5FGJ","candidate_name":"REBECCA RHYNHART","votes":73},{"candidate_id":"GRAY-6R5K","candidate_name":"DELSCIA GRAY","votes":3},{"candidate_id":"BROWN-U167","candidate_name":"AMEN BROWN","votes":17},{"candidate_id":"BROWN-5D3W","candidate_name":"JEFF BROWN","votes":74},{"candidate_id":"BLOOM-Y1MN","candidate_name":"WARREN BLOOM","votes":5},{"candidate_id":"DOMB-7TZC","candidate_name":"ALLAN DOMB","votes":54},{"candidate_id":"GYM-EJ2K","candidate_name":"HELEN GYM","votes":84},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":0}],"49":[{"candidate_id":"PARKER-TVIR","candidate_name":"CHERELLE L PARKER","votes":863},{"candidate_id":"DELEON-YW1K","candidate_name":"JAMES M DELEON","votes":26},{"candidate_id":"RHYNHART-5FGJ","candidate_name":"REBECCA RHYNHART","votes":108},{"candidate_id":"GRAY-6R5K","candidate_name":"DELSCIA GRAY","votes":10},{"candidate_id":"BROWN-U167","candidate_name":"AMEN BROWN","votes":31},{"candidate_id":"BROWN-5D3W","candidate_name":"JEFF BROWN","votes":223},{"candidate_id":"BLOOM-Y1MN","candidate_name":"WARREN BLOOM","votes":3},{"candidate_id":"DOMB-7TZC","candidate_name":"ALLAN DOMB","votes":96},{"candidate_id":"GYM-EJ2K","candidate_name":"HELEN GYM","votes":145},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":0}],"59":[{"candidate_id":"PARKER-TVIR","candidate_name":"CHERELLE L PARKER","votes":1939},{"candidate_id":"DELEON-YW1K","candidate_name":"JAMES M DELEON","votes":37},{"candidate_id":"RHYNHART-5FGJ","candidate_name":"REBECCA RHYNHART","votes":610},{"candidate_id":"GRAY-6R5K","candidate_name":"DELSCIA GRAY","votes":11},{"candidate_id":"BROWN-U167","candidate_name":"AMEN BROWN","votes":69},{"candidate_id":"BROWN-5D3W","candidate_name":"JEFF BROWN","votes":486},{"candidate_id":"BLOOM-Y1MN","candidate_name":"WARREN BLOOM","votes":10},{"candidate_id":"DOMB-7TZC","candidate_name":"ALLAN DOMB","votes":186},{"candidate_id":"GYM-EJ2K","candidate_name":"HELEN GYM","votes":1102},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":2}],"09":[{"candidate_id":"PARKER-TVIR","candidate_name":"CHERELLE L PARKER","votes":922},{"candidate_id":"DELEON-YW1K","candidate_name":"JAMES M DELEON","votes":15},{"candidate_id":"RHYNHART-5FGJ","candidate_name":"REBECCA RHYNHART","votes":2685},{"candidate_id":"GRAY-6R5K","candidate_name":"DELSCIA GRAY","votes":5},{"candidate_id":"BROWN-U167","candidate_name":"AMEN BROWN","votes":19},{"candidate_id":"BROWN-5D3W","candidate_name":"JEFF BROWN","votes":197},{"candidate_id":"BLOOM-Y1MN","candidate_name":"WARREN BLOOM","votes":2},{"candidate_id":"DOMB-7TZC","candidate_name":"ALLAN DOMB","votes":404},{"candidate_id":"GYM-EJ2K","candidate_name":"HELEN GYM","votes":1690},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":3}]}}};
+const CD8_ELECTION_DATA = {"council23":{"divisions":{"1101":[9,30],"1102":[19,63],"1103":[7,31],"1104":[9,16],"1105":[15,37],"1106":[11,25],"1107":[10,68],"1108":[24,56],"1109":[53,48],"1110":[13,22],"1111":[17,80],"1112":[31,23],"1113":[22,35],"1114":[18,44],"1115":[11,35],"1116":[34,56],"1117":[21,23],"1118":[12,47],"1119":[15,79],"1120":[26,71],"1201":[24,85],"1202":[17,69],"1203":[18,57],"1204":[12,28],"1205":[43,137],"1206":[29,69],"1207":[54,71],"1208":[77,71],"1209":[83,42],"1210":[23,65],"1211":[62,74],"1212":[38,86],"1213":[30,61],"1214":[32,74],"1215":[101,88],"1216":[136,82],"1217":[77,85],"1218":[55,52],"1219":[48,40],"1220":[54,59],"1221":[42,32],"1222":[125,81],"1223":[193,68],"1224":[64,29],"1301":[59,80],"1302":[59,41],"1303":[66,47],"1304":[136,86],"1305":[71,65],"1306":[17,64],"1307":[16,52],"1308":[5,50],"1309":[18,57],"1310":[19,60],"1311":[17,42],"1312":[18,41],"1313":[30,50],"1314":[26,70],"1315":[18,56],"1316":[21,84],"1317":[24,68],"1318":[24,159],"1319":[9,75],"1320":[19,67],"1321":[13,61],"1322":[29,82],"1323":[14,53],"1324":[18,48],"1325":[25,41],"1701":[30,93],"1702":[28,87],"1703":[30,119],"1704":[26,87],"1705":[21,85],"1706":[28,57],"1707":[38,72],"1708":[17,63],"1709":[24,68],"1710":[32,110],"1711":[23,77],"1712":[30,115],"1713":[17,80],"1714":[30,93],"1715":[42,58],"1716":[9,55],"1717":[22,67],"1718":[30,75],"1719":[24,98],"1720":[29,73],"1721":[25,139],"1722":[42,113],"1723":[19,61],"1724":[27,89],"1725":[24,63],"1726":[3,32],"1727":[20,64],"1728":[15,64],"1729":[28,62],"2201":[406,75],"2202":[323,89],"2203":[139,69],"2204":[159,77],"2205":[187,98],"2206":[291,92],"2207":[221,102],"2208":[127,89],"2209":[104,83],"2210":[126,72],"2211":[83,83],"2212":[51,97],"2213":[98,72],"2214":[98,96],"2215":[71,91],"2216":[150,76],"2217":[161,98],"2218":[85,94],"2219":[110,99],"2220":[56,86],"2221":[38,104],"2222":[31,126],"2223":[169,76],"2224":[119,121],"2225":[61,117],"2226":[70,131],"2227":[45,167],"2228":[45,128],"2229":[46,174],"4212":[14,17],"4213":[24,65],"4214":[17,42],"4216":[19,35],"4217":[15,50],"4220":[20,44],"4221":[13,18],"4901":[14,31],"4904":[22,62],"4905":[31,80],"4909":[31,100],"4910":[37,74],"4911":[40,45],"4912":[27,85],"4913":[16,38],"4914":[19,57],"4915":[22,64],"4919":[24,64],"5901":[26,67],"5902":[39,93],"5903":[35,67],"5904":[92,166],"5905":[36,111],"5906":[23,47],"5907":[43,33],"5908":[36,81],"5909":[30,58],"5910":[77,89],"5911":[41,80],"5912":[90,55],"5913":[46,86],"5914":[45,39],"5915":[35,39],"5916":[33,50],"5917":[192,118],"5918":[57,103],"5919":[211,68],"5920":[21,30],"5921":[147,51],"5922":[172,59],"5923":[110,61],"5924":[139,52],"5925":[104,71],"0901":[206,106],"0902":[221,85],"0903":[328,83],"0904":[206,74],"0905":[228,78],"0906":[231,100],"0907":[146,76],"0908":[134,46],"0909":[312,103],"0910":[257,126],"0911":[298,125],"0912":[286,89],"0913":[299,70],"0914":[222,51],"0915":[281,73],"0916":[83,95],"0917":[63,78]},"totals":[{"candidate_id":"ANDERSONOBERMAN-MK2E","candidate_name":"SETH ANDERSON-OBERMAN","votes":13074},{"candidate_id":"BASS-U9Q1","candidate_name":"CINDY BASS","votes":13497},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":37}],"wardTotals":{"11":[{"candidate_id":"ANDERSONOBERMAN-MK2E","candidate_name":"SETH ANDERSON-OBERMAN","votes":377},{"candidate_id":"BASS-U9Q1","candidate_name":"CINDY BASS","votes":889},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":0}],"12":[{"candidate_id":"ANDERSONOBERMAN-MK2E","candidate_name":"SETH ANDERSON-OBERMAN","votes":1437},{"candidate_id":"BASS-U9Q1","candidate_name":"CINDY BASS","votes":1605},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":2}],"13":[{"candidate_id":"ANDERSONOBERMAN-MK2E","candidate_name":"SETH ANDERSON-OBERMAN","votes":771},{"candidate_id":"BASS-U9Q1","candidate_name":"CINDY BASS","votes":1599},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":1}],"17":[{"candidate_id":"ANDERSONOBERMAN-MK2E","candidate_name":"SETH ANDERSON-OBERMAN","votes":733},{"candidate_id":"BASS-U9Q1","candidate_name":"CINDY BASS","votes":2319},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":6}],"22":[{"candidate_id":"ANDERSONOBERMAN-MK2E","candidate_name":"SETH ANDERSON-OBERMAN","votes":3670},{"candidate_id":"BASS-U9Q1","candidate_name":"CINDY BASS","votes":2882},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":14}],"42":[{"candidate_id":"ANDERSONOBERMAN-MK2E","candidate_name":"SETH ANDERSON-OBERMAN","votes":122},{"candidate_id":"BASS-U9Q1","candidate_name":"CINDY BASS","votes":271},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":0}],"49":[{"candidate_id":"ANDERSONOBERMAN-MK2E","candidate_name":"SETH ANDERSON-OBERMAN","votes":283},{"candidate_id":"BASS-U9Q1","candidate_name":"CINDY BASS","votes":700},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":2}],"59":[{"candidate_id":"ANDERSONOBERMAN-MK2E","candidate_name":"SETH ANDERSON-OBERMAN","votes":1880},{"candidate_id":"BASS-U9Q1","candidate_name":"CINDY BASS","votes":1774},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":7}],"09":[{"candidate_id":"ANDERSONOBERMAN-MK2E","candidate_name":"SETH ANDERSON-OBERMAN","votes":3801},{"candidate_id":"BASS-U9Q1","candidate_name":"CINDY BASS","votes":1458},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":5}]}},"mayor23":{"divisions":{"1101":[7,27,5],"1102":[3,72,11],"1103":[6,22,5],"1104":[3,25,6],"1105":[3,33,7],"1106":[9,27,5],"1107":[10,66,8],"1108":[14,58,17],"1109":[9,87,10],"1110":[3,23,1],"1111":[14,75,10],"1112":[9,45,9],"1113":[10,65,11],"1114":[4,54,5],"1115":[7,28,4],"1116":[8,70,11],"1117":[3,32,5],"1118":[3,49,3],"1119":[4,80,9],"1120":[12,89,11],"1201":[13,101,12],"1202":[4,85,12],"1203":[4,65,1],"1204":[2,40,7],"1205":[37,132,18],"1206":[18,67,10],"1207":[25,82,11],"1208":[47,94,17],"1209":[65,59,21],"1210":[10,69,12],"1211":[38,76,23],"1212":[23,83,12],"1213":[11,82,10],"1214":[20,76,8],"1215":[70,104,29],"1216":[94,91,50],"1217":[32,103,21],"1218":[35,51,5],"1219":[31,51,8],"1220":[41,59,15],"1221":[9,55,13],"1222":[65,90,46],"1223":[116,83,63],"1224":[20,51,13],"1301":[26,92,20],"1302":[34,57,13],"1303":[28,77,6],"1304":[84,93,33],"1305":[52,62,25],"1306":[11,62,7],"1307":[4,57,9],"1308":[4,55,11],"1309":[13,51,4],"1310":[12,58,9],"1311":[5,43,5],"1312":[12,50,14],"1313":[19,48,7],"1314":[8,66,12],"1315":[9,55,5],"1316":[14,67,11],"1317":[8,74,10],"1318":[9,134,8],"1319":[10,75,11],"1320":[10,71,8],"1321":[12,45,7],"1322":[13,77,9],"1323":[6,48,8],"1324":[5,49,1],"1325":[6,51,6],"1701":[12,95,13],"1702":[17,107,10],"1703":[21,107,16],"1704":[16,86,10],"1705":[8,98,10],"1706":[4,73,10],"1707":[7,80,16],"1708":[6,79,3],"1709":[6,79,8],"1710":[8,105,14],"1711":[10,87,10],"1712":[8,117,14],"1713":[6,87,13],"1714":[12,109,5],"1715":[7,83,9],"1716":[7,56,4],"1717":[8,77,10],"1718":[13,96,15],"1719":[12,103,14],"1720":[16,86,12],"1721":[11,130,16],"1722":[21,119,21],"1723":[12,54,11],"1724":[11,70,5],"1725":[10,69,9],"1726":[4,25,6],"1727":[9,84,6],"1728":[7,68,9],"1729":[12,79,5],"2201":[262,69,159],"2202":[180,73,168],"2203":[77,68,58],"2204":[81,74,78],"2205":[117,96,82],"2206":[192,98,85],"2207":[134,115,96],"2208":[70,100,45],"2209":[58,93,39],"2210":[66,83,45],"2211":[57,72,46],"2212":[36,98,20],"2213":[43,108,22],"2214":[67,95,26],"2215":[37,114,24],"2216":[106,65,65],"2217":[106,95,65],"2218":[55,98,41],"2219":[63,110,25],"2220":[48,80,18],"2221":[26,110,14],"2222":[14,120,22],"2223":[81,73,104],"2224":[65,93,87],"2225":[32,120,29],"2226":[21,132,26],"2227":[19,157,23],"2228":[15,136,13],"2229":[24,146,29],"4212":[9,40,7],"4213":[11,83,12],"4214":[13,49,12],"4216":[8,53,10],"4217":[14,54,15],"4220":[15,56,10],"4221":[14,34,7],"4901":[15,35,8],"4904":[8,73,11],"4905":[15,93,10],"4909":[24,117,11],"4910":[13,81,17],"4911":[17,76,10],"4912":[12,97,7],"4913":[10,38,12],"4914":[7,82,9],"4915":[11,75,2],"4919":[13,96,11],"5901":[7,68,9],"5902":[18,111,9],"5903":[14,71,11],"5904":[32,166,52],"5905":[26,128,13],"5906":[10,59,9],"5907":[17,54,7],"5908":[23,91,13],"5909":[6,65,13],"5910":[29,118,15],"5911":[27,76,14],"5912":[40,73,21],"5913":[25,95,10],"5914":[25,53,8],"5915":[13,54,7],"5916":[25,43,10],"5917":[118,121,72],"5918":[19,94,28],"5919":[162,75,45],"5920":[24,15,8],"5921":[91,54,50],"5922":[101,64,65],"5923":[79,72,21],"5924":[88,57,59],"5925":[83,62,41],"0901":[94,93,131],"0902":[89,78,135],"0903":[172,76,179],"0904":[118,36,142],"0905":[97,49,148],"0906":[77,47,203],"0907":[25,31,184],"0908":[39,17,111],"0909":[132,24,259],"0910":[71,31,286],"0911":[107,72,252],"0912":[137,67,159],"0913":[205,48,121],"0914":[111,36,138],"0915":[137,46,178],"0916":[58,96,34],"0917":[21,75,25]},"totals":[{"candidate_id":"PARKER-TVIR","candidate_name":"CHERELLE L PARKER","votes":13985},{"candidate_id":"DELEON-YW1K","candidate_name":"JAMES M DELEON","votes":243},{"candidate_id":"RHYNHART-5FGJ","candidate_name":"REBECCA RHYNHART","votes":6183},{"candidate_id":"GRAY-6R5K","candidate_name":"DELSCIA GRAY","votes":90},{"candidate_id":"BROWN-U167","candidate_name":"AMEN BROWN","votes":447},{"candidate_id":"BROWN-5D3W","candidate_name":"JEFF BROWN","votes":3261},{"candidate_id":"BLOOM-Y1MN","candidate_name":"WARREN BLOOM","votes":63},{"candidate_id":"DOMB-7TZC","candidate_name":"ALLAN DOMB","votes":2009},{"candidate_id":"GYM-EJ2K","candidate_name":"HELEN GYM","votes":6859},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":19}],"wardTotals":{"11":[{"candidate_id":"PARKER-TVIR","candidate_name":"CHERELLE L PARKER","votes":1027},{"candidate_id":"DELEON-YW1K","candidate_name":"JAMES M DELEON","votes":19},{"candidate_id":"RHYNHART-5FGJ","candidate_name":"REBECCA RHYNHART","votes":153},{"candidate_id":"GRAY-6R5K","candidate_name":"DELSCIA GRAY","votes":14},{"candidate_id":"BROWN-U167","candidate_name":"AMEN BROWN","votes":42},{"candidate_id":"BROWN-5D3W","candidate_name":"JEFF BROWN","votes":266},{"candidate_id":"BLOOM-Y1MN","candidate_name":"WARREN BLOOM","votes":9},{"candidate_id":"DOMB-7TZC","candidate_name":"ALLAN DOMB","votes":172},{"candidate_id":"GYM-EJ2K","candidate_name":"HELEN GYM","votes":141},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":2}],"12":[{"candidate_id":"PARKER-TVIR","candidate_name":"CHERELLE L PARKER","votes":1849},{"candidate_id":"DELEON-YW1K","candidate_name":"JAMES M DELEON","votes":32},{"candidate_id":"RHYNHART-5FGJ","candidate_name":"REBECCA RHYNHART","votes":437},{"candidate_id":"GRAY-6R5K","candidate_name":"DELSCIA GRAY","votes":11},{"candidate_id":"BROWN-U167","candidate_name":"AMEN BROWN","votes":57},{"candidate_id":"BROWN-5D3W","candidate_name":"JEFF BROWN","votes":440},{"candidate_id":"BLOOM-Y1MN","candidate_name":"WARREN BLOOM","votes":4},{"candidate_id":"DOMB-7TZC","candidate_name":"ALLAN DOMB","votes":186},{"candidate_id":"GYM-EJ2K","candidate_name":"HELEN GYM","votes":830},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":3}],"13":[{"candidate_id":"PARKER-TVIR","candidate_name":"CHERELLE L PARKER","votes":1617},{"candidate_id":"DELEON-YW1K","candidate_name":"JAMES M DELEON","votes":35},{"candidate_id":"RHYNHART-5FGJ","candidate_name":"REBECCA RHYNHART","votes":259},{"candidate_id":"GRAY-6R5K","candidate_name":"DELSCIA GRAY","votes":9},{"candidate_id":"BROWN-U167","candidate_name":"AMEN BROWN","votes":48},{"candidate_id":"BROWN-5D3W","candidate_name":"JEFF BROWN","votes":468},{"candidate_id":"BLOOM-Y1MN","candidate_name":"WARREN BLOOM","votes":8},{"candidate_id":"DOMB-7TZC","candidate_name":"ALLAN DOMB","votes":240},{"candidate_id":"GYM-EJ2K","candidate_name":"HELEN GYM","votes":414},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":2}],"17":[{"candidate_id":"PARKER-TVIR","candidate_name":"CHERELLE L PARKER","votes":2508},{"candidate_id":"DELEON-YW1K","candidate_name":"JAMES M DELEON","votes":39},{"candidate_id":"RHYNHART-5FGJ","candidate_name":"REBECCA RHYNHART","votes":304},{"candidate_id":"GRAY-6R5K","candidate_name":"DELSCIA GRAY","votes":14},{"candidate_id":"BROWN-U167","candidate_name":"AMEN BROWN","votes":111},{"candidate_id":"BROWN-5D3W","candidate_name":"JEFF BROWN","votes":557},{"candidate_id":"BLOOM-Y1MN","candidate_name":"WARREN BLOOM","votes":10},{"candidate_id":"DOMB-7TZC","candidate_name":"ALLAN DOMB","votes":256},{"candidate_id":"GYM-EJ2K","candidate_name":"HELEN GYM","votes":301},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":2}],"22":[{"candidate_id":"PARKER-TVIR","candidate_name":"CHERELLE L PARKER","votes":2891},{"candidate_id":"DELEON-YW1K","candidate_name":"JAMES M DELEON","votes":32},{"candidate_id":"RHYNHART-5FGJ","candidate_name":"REBECCA RHYNHART","votes":1554},{"candidate_id":"GRAY-6R5K","candidate_name":"DELSCIA GRAY","votes":13},{"candidate_id":"BROWN-U167","candidate_name":"AMEN BROWN","votes":53},{"candidate_id":"BROWN-5D3W","candidate_name":"JEFF BROWN","votes":550},{"candidate_id":"BLOOM-Y1MN","candidate_name":"WARREN BLOOM","votes":12},{"candidate_id":"DOMB-7TZC","candidate_name":"ALLAN DOMB","votes":415},{"candidate_id":"GYM-EJ2K","candidate_name":"HELEN GYM","votes":2152},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":5}],"42":[{"candidate_id":"PARKER-TVIR","candidate_name":"CHERELLE L PARKER","votes":369},{"candidate_id":"DELEON-YW1K","candidate_name":"JAMES M DELEON","votes":8},{"candidate_id":"RHYNHART-5FGJ","candidate_name":"REBECCA RHYNHART","votes":73},{"candidate_id":"GRAY-6R5K","candidate_name":"DELSCIA GRAY","votes":3},{"candidate_id":"BROWN-U167","candidate_name":"AMEN BROWN","votes":17},{"candidate_id":"BROWN-5D3W","candidate_name":"JEFF BROWN","votes":74},{"candidate_id":"BLOOM-Y1MN","candidate_name":"WARREN BLOOM","votes":5},{"candidate_id":"DOMB-7TZC","candidate_name":"ALLAN DOMB","votes":54},{"candidate_id":"GYM-EJ2K","candidate_name":"HELEN GYM","votes":84},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":0}],"49":[{"candidate_id":"PARKER-TVIR","candidate_name":"CHERELLE L PARKER","votes":863},{"candidate_id":"DELEON-YW1K","candidate_name":"JAMES M DELEON","votes":26},{"candidate_id":"RHYNHART-5FGJ","candidate_name":"REBECCA RHYNHART","votes":108},{"candidate_id":"GRAY-6R5K","candidate_name":"DELSCIA GRAY","votes":10},{"candidate_id":"BROWN-U167","candidate_name":"AMEN BROWN","votes":31},{"candidate_id":"BROWN-5D3W","candidate_name":"JEFF BROWN","votes":223},{"candidate_id":"BLOOM-Y1MN","candidate_name":"WARREN BLOOM","votes":3},{"candidate_id":"DOMB-7TZC","candidate_name":"ALLAN DOMB","votes":96},{"candidate_id":"GYM-EJ2K","candidate_name":"HELEN GYM","votes":145},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":0}],"59":[{"candidate_id":"PARKER-TVIR","candidate_name":"CHERELLE L PARKER","votes":1939},{"candidate_id":"DELEON-YW1K","candidate_name":"JAMES M DELEON","votes":37},{"candidate_id":"RHYNHART-5FGJ","candidate_name":"REBECCA RHYNHART","votes":610},{"candidate_id":"GRAY-6R5K","candidate_name":"DELSCIA GRAY","votes":11},{"candidate_id":"BROWN-U167","candidate_name":"AMEN BROWN","votes":69},{"candidate_id":"BROWN-5D3W","candidate_name":"JEFF BROWN","votes":486},{"candidate_id":"BLOOM-Y1MN","candidate_name":"WARREN BLOOM","votes":10},{"candidate_id":"DOMB-7TZC","candidate_name":"ALLAN DOMB","votes":186},{"candidate_id":"GYM-EJ2K","candidate_name":"HELEN GYM","votes":1102},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":2}],"09":[{"candidate_id":"PARKER-TVIR","candidate_name":"CHERELLE L PARKER","votes":922},{"candidate_id":"DELEON-YW1K","candidate_name":"JAMES M DELEON","votes":15},{"candidate_id":"RHYNHART-5FGJ","candidate_name":"REBECCA RHYNHART","votes":2685},{"candidate_id":"GRAY-6R5K","candidate_name":"DELSCIA GRAY","votes":5},{"candidate_id":"BROWN-U167","candidate_name":"AMEN BROWN","votes":19},{"candidate_id":"BROWN-5D3W","candidate_name":"JEFF BROWN","votes":197},{"candidate_id":"BLOOM-Y1MN","candidate_name":"WARREN BLOOM","votes":2},{"candidate_id":"DOMB-7TZC","candidate_name":"ALLAN DOMB","votes":404},{"candidate_id":"GYM-EJ2K","candidate_name":"HELEN GYM","votes":1690},{"candidate_id":null,"candidate_name":"WRITE-IN","votes":3}]}},"sethRabbMethods":{"divisions":{"1101":[6,2,1,4],"1102":[18,1,4,0],"1103":[7,0,3,1],"1104":[7,0,5,1],"1105":[12,3,9,1],"1106":[9,2,3,0],"1107":[7,3,4,0],"1108":[16,8,7,1],"1109":[42,11,9,0],"1110":[10,3,5,0],"1111":[16,1,5,2],"1112":[25,5,6,2],"1113":[14,8,8,0],"1114":[16,2,6,1],"1115":[7,3,1,1],"1116":[27,7,10,4],"1117":[17,4,4,0],"1118":[4,8,4,4],"1119":[12,3,6,2],"1120":[18,7,8,2],"1201":[21,2,31,2],"1202":[11,6,7,1],"1203":[15,3,14,2],"1204":[7,4,17,2],"1205":[28,14,45,10],"1206":[16,12,29,4],"1207":[34,19,54,5],"1208":[55,22,54,12],"1209":[71,11,86,5],"1210":[18,5,21,2],"1211":[44,18,49,8],"1212":[28,10,24,6],"1213":[22,8,19,5],"1214":[18,14,27,2],"1215":[72,28,79,19],"1216":[95,39,101,16],"1217":[62,13,57,8],"1218":[42,13,35,8],"1219":[44,3,20,7],"1220":[43,10,34,1],"1221":[38,4,14,2],"1222":[86,39,90,25],"1223":[138,54,113,28],"1224":[53,11,28,6],"1301":[39,17,24,5],"1302":[42,17,24,14],"1303":[55,11,35,8],"1304":[100,36,91,17],"1305":[56,15,53,12],"1306":[13,4,1,2],"1307":[11,4,5,0],"1308":[2,3,3,1],"1309":[15,3,7,0],"1310":[9,10,8,1],"1311":[8,9,9,1],"1312":[16,1,10,1],"1313":[23,6,14,4],"1314":[14,11,15,5],"1315":[10,8,18,0],"1316":[12,9,12,1],"1317":[13,11,11,4],"1318":[18,6,8,2],"1319":[6,3,14,1],"1320":[13,6,8,3],"1321":[10,3,12,1],"1322":[18,11,13,4],"1323":[9,5,11,1],"1324":[13,5,5,1],"1325":[22,2,12,0],"1701":[21,9,15,1],"1702":[21,7,13,6],"1703":[21,8,6,1],"1704":[13,13,2,6],"1705":[13,8,17,5],"1706":[21,7,7,0],"1707":[21,17,15,4],"1708":[7,10,7,2],"1709":[21,3,22,4],"1710":[23,9,20,2],"1711":[18,5,21,2],"1712":[19,11,14,4],"1713":[14,2,14,2],"1714":[17,13,33,4],"1715":[40,2,16,0],"1716":[3,5,10,1],"1717":[15,7,12,1],"1718":[21,9,15,2],"1719":[17,7,17,2],"1720":[17,12,11,3],"1721":[15,9,16,2],"1722":[25,16,22,3],"1723":[9,10,18,6],"1724":[24,2,19,0],"1725":[12,12,13,0],"1726":[0,3,12,1],"1727":[13,7,15,2],"1728":[10,5,5,0],"1729":[18,10,15,2],"2201":[243,161,251,127],"2202":[213,109,225,88],"2203":[73,66,87,50],"2204":[112,45,147,59],"2205":[120,66,170,75],"2206":[171,119,207,113],"2207":[167,50,188,68],"2208":[86,39,126,43],"2209":[66,37,125,30],"2210":[74,49,101,43],"2211":[72,11,108,23],"2212":[36,15,77,23],"2213":[67,31,89,33],"2214":[76,22,124,32],"2215":[52,18,91,34],"2216":[114,35,151,37],"2217":[122,39,134,46],"2218":[55,29,113,33],"2219":[72,37,116,40],"2220":[39,17,86,32],"2221":[27,11,65,10],"2222":[21,9,66,23],"2223":[115,51,136,58],"2224":[95,24,112,45],"2225":[31,30,78,37],"2226":[44,26,103,36],"2227":[26,19,97,32],"2228":[29,15,69,25],"2229":[36,10,67,34],"5901":[17,9,9,1],"5902":[23,16,40,6],"5903":[22,13,8,3],"5904":[56,36,66,19],"5905":[24,11,37,10],"5906":[13,10,4,1],"5907":[30,13,35,7],"5908":[27,8,27,5],"5909":[20,10,16,2],"5910":[45,31,52,7],"5911":[29,12,38,8],"5912":[78,12,87,7],"5913":[34,12,46,6],"5914":[26,19,37,7],"5915":[31,4,30,3],"5916":[18,14,48,7],"5917":[136,54,137,28],"5918":[26,31,33,16],"5919":[161,49,150,28],"5920":[16,5,24,4],"5921":[104,40,96,28],"5922":[126,42,130,38],"5923":[90,18,89,14],"5924":[118,21,150,17],"5925":[65,37,85,30],"0901":[144,61,205,73],"0902":[168,52,186,56],"0903":[216,110,246,72],"0904":[152,54,173,50],"0905":[159,68,137,60],"0906":[154,76,148,73],"0907":[98,48,43,36],"0908":[75,59,47,20],"0909":[174,138,158,92],"0910":[190,66,133,64],"0911":[200,96,187,82],"0912":[194,91,212,79],"0913":[224,74,240,64],"0914":[134,86,157,74],"0915":[180,99,167,73],"0916":[58,24,92,26],"0917":[39,23,69,22]}}};
 
 const PHILLY_ADDRESS_GEOCODER = 'https://citygeo-geocoder-pub.databridge.phila.gov/arcgis/rest/services/Geocoders/Philly_Composite_Locator/GeocodeServer/findAddressCandidates';
 const PHILLY_PLACE_GEOCODER = 'https://citygeo-geocoder-pub.databridge.phila.gov/arcgis/rest/services/Geocoders/PPR_Composite/GeocodeServer/findAddressCandidates';
@@ -997,7 +999,8 @@ const SD16_HOUSE_DISTRICTS = new Set(['131','132','134','143','145','183','187']
 const SD16_DATA_LAYERS = new Set(['sd16_22g','sd16_pinsley_density','sd16_pinsley_dem_gap']);
 // Keep retired/temporarily hidden SD16 layers isolated from the Philadelphia dropdown.
 const SD16_ONLY_DATA_LAYERS = new Set([...SD16_DATA_LAYERS,'sd16_registration_26p']);
-const CD8_DATA_LAYERS = new Set(['cd8_council_23p','cd8_mayor_23p','cd8_congress_26p','cd8_seth_rabb_shift','cd8_rabb_overperformance']);
+const CD8_METHOD_LAYERS = new Set(['cd8_mail_shift','cd8_eday_shift']);
+const CD8_DATA_LAYERS = new Set(['cd8_council_23p','cd8_mayor_23p','cd8_congress_26p','cd8_seth_rabb_shift','cd8_rabb_overperformance',...CD8_METHOD_LAYERS]);
 let cd8SethRabbSummary = null;
 const CD8_LAYER_CONFIG = {
   cd8_council_23p:{
@@ -1576,6 +1579,10 @@ function loadCd8SethRabbShift() {
   const overlap=[];
   let sethTotal=0;
   let rabbTotal=0;
+  const methodTotals={
+    MAIL:{sethTotal:0,rabbTotal:0,prefix:'cd8sr_mail'},
+    EDAY:{sethTotal:0,rabbTotal:0,prefix:'cd8sr_eday'}
+  };
 
   for (const feature of (currentPrecincts.features||[])) {
     const p=feature.properties||{};
@@ -1585,17 +1592,37 @@ function loadCd8SethRabbShift() {
     p.cd8sr_rabb_share_pct=null;
     p.cd8sr_shift_pp=null;
     p.cd8sr_rabb_overperformance_votes=null;
+    for (const method of Object.values(methodTotals)) {
+      p[`${method.prefix}_seth_votes`]=null;
+      p[`${method.prefix}_rabb_votes`]=null;
+      p[`${method.prefix}_seth_share_pct`]=null;
+      p[`${method.prefix}_rabb_share_pct`]=null;
+      p[`${method.prefix}_shift_pp`]=null;
+    }
 
     const divisionCode=String(p.division_code||'');
     const sethVotes=CD8_ELECTION_DATA.council23?.divisions?.[divisionCode]?.[0];
+    const methodVotes=CD8_ELECTION_DATA.sethRabbMethods?.divisions?.[divisionCode];
     const rabbRow=parseCandidateResults(p.rabb_candidate_results)
       .find(row=>row.candidate_id==='RABB-3NPB');
-    if (String(p.congressional_district)!=='3' || sethVotes==null || !rabbRow) continue;
+    if (String(p.congressional_district)!=='3' || sethVotes==null || !rabbRow || !methodVotes) continue;
 
-    const row={feature,sethVotes:Number(sethVotes),rabbVotes:Number(rabbRow.votes||0)};
+    const row={
+      feature,
+      sethVotes:Number(sethVotes),
+      rabbVotes:Number(rabbRow.votes||0),
+      methods:{
+        EDAY:{sethVotes:Number(methodVotes[0]||0),rabbVotes:Number(methodVotes[2]||0)},
+        MAIL:{sethVotes:Number(methodVotes[1]||0),rabbVotes:Number(methodVotes[3]||0)}
+      }
+    };
     overlap.push(row);
     sethTotal+=row.sethVotes;
     rabbTotal+=row.rabbVotes;
+    for (const methodName of Object.keys(methodTotals)) {
+      methodTotals[methodName].sethTotal+=row.methods[methodName].sethVotes;
+      methodTotals[methodName].rabbTotal+=row.methods[methodName].rabbVotes;
+    }
   }
 
   for (const row of overlap) {
@@ -1609,16 +1636,33 @@ function loadCd8SethRabbShift() {
     p.cd8sr_shift_pp=sethShare!=null && rabbShare!=null ? rabbShare-sethShare : null;
     p.cd8sr_rabb_overperformance_votes=rabbShare!=null && sethShare!=null && rabbShare>sethShare
       ? row.rabbVotes-row.sethVotes : 0;
+    for (const [methodName,method] of Object.entries(methodTotals)) {
+      const votes=row.methods[methodName];
+      const methodSethShare=method.sethTotal>0?100*votes.sethVotes/method.sethTotal:null;
+      const methodRabbShare=method.rabbTotal>0?100*votes.rabbVotes/method.rabbTotal:null;
+      p[`${method.prefix}_seth_votes`]=votes.sethVotes;
+      p[`${method.prefix}_rabb_votes`]=votes.rabbVotes;
+      p[`${method.prefix}_seth_share_pct`]=methodSethShare;
+      p[`${method.prefix}_rabb_share_pct`]=methodRabbShare;
+      p[`${method.prefix}_shift_pp`]=methodSethShare!=null&&methodRabbShare!=null
+        ? methodRabbShare-methodSethShare:null;
+    }
   }
 
   const positiveRows=overlap.filter(row=>Number(row.feature.properties.cd8sr_rabb_overperformance_votes)>0);
+  for (const method of Object.values(methodTotals)) {
+    method.maxAbsShift=overlap.reduce((max,row)=>
+      Math.max(max,Math.abs(Number(row.feature.properties[`${method.prefix}_shift_pp`]||0))),0
+    );
+  }
   cd8SethRabbSummary={
     divisionCount:overlap.length,
     sethTotal,
     rabbTotal,
     overperformanceDivisionCount:positiveRows.length,
     overperformanceVotes:positiveRows.reduce((sum,row)=>sum+Number(row.feature.properties.cd8sr_rabb_overperformance_votes),0),
-    maxOverperformanceVotes:positiveRows.reduce((max,row)=>Math.max(max,Number(row.feature.properties.cd8sr_rabb_overperformance_votes)),0)
+    maxOverperformanceVotes:positiveRows.reduce((max,row)=>Math.max(max,Number(row.feature.properties.cd8sr_rabb_overperformance_votes)),0),
+    methods:methodTotals
   };
   map.getSource('precincts').setData(currentPrecincts);
   return cd8SethRabbSummary;
@@ -1637,6 +1681,16 @@ function rabbOverperformanceColorExpression(maxValue) {
     ['==',['get','cd8sr_rabb_overperformance_votes'],null],'rgba(255,255,255,0)',
     ['interpolate',['linear'],['get','cd8sr_rabb_overperformance_votes'],
       0,'#ffffff',max*0.25,'#c7e9c0',max*0.5,'#74c476',max*0.75,'#238b45',max,'#005a32']
+  ];
+}
+
+function methodShiftColorExpression(prefix,maxAbsValue) {
+  const max=Math.max(0.01,Number(maxAbsValue)||0.01);
+  return ['case',
+    ['==',['get',`${prefix}_shift_pp`],null],'rgba(255,255,255,0)',
+    ['interpolate',['linear'],['get',`${prefix}_shift_pp`],
+      -max,'#176b2c',-max*0.5,'#78ba73',0,'#f3f0e6',
+      max*0.5,'#b7a4d4',max,'#4F3B83']
   ];
 }
 
@@ -1754,6 +1808,21 @@ function setLegend(layer) {
       <div class="legend-row"><span class="swatch" style="background:#b7a4d4"></span><span>40–60%</span></div>
       <div class="legend-row"><span class="swatch" style="background:#8065ad"></span><span>60–80%</span></div>
       <div class="legend-row"><span class="swatch" style="background:#4F3B83"></span><span>80%+</span></div>`;
+    return;
+  }
+  if (CD8_METHOD_LAYERS.has(layer)) {
+    const method=layer==='cd8_mail_shift'?'MAIL':'EDAY';
+    const summary=cd8SethRabbSummary?.methods?.[method];
+    const max=Math.max(0.01,Number(summary?.maxAbsShift)||1);
+    legend.style.display='block';
+    legendTitle.textContent=`${method} vote concentration · Rabb − Seth A-O · CD 8 ∩ PA-03`;
+    legendRows.innerHTML=`
+      <div class="legend-row"><span class="swatch" style="background:#176b2c"></span><span>Seth A-O +${max.toFixed(2)} pp · maximum</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#78ba73"></span><span>Seth A-O +${(max*0.5).toFixed(2)} pp</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#f3f0e6"></span><span>Even</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#b7a4d4"></span><span>Rabb +${(max*0.5).toFixed(2)} pp</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#4F3B83"></span><span>Rabb +${max.toFixed(2)} pp · maximum</span></div>
+      <div class="area-note">Dynamic, symmetric scale. Each percentage is the division's share of that candidate's ${method} vote across the same overlapping divisions.</div>`;
     return;
   }
   if (layer==='cd8_seth_rabb_shift') {
@@ -1948,6 +2017,13 @@ async function updateDataLayer() {
     const summary=loadCd8SethRabbShift();
     map.setPaintProperty('precinct-fill','fill-color',rabbOverperformanceColorExpression(summary.maxOverperformanceVotes));
     map.setPaintProperty('precinct-fill','fill-opacity',0.88);
+    setLegend(layer);
+  } else if (CD8_METHOD_LAYERS.has(layer)) {
+    const summary=loadCd8SethRabbShift();
+    const method=layer==='cd8_mail_shift'?'MAIL':'EDAY';
+    const methodSummary=summary.methods[method];
+    map.setPaintProperty('precinct-fill','fill-color',methodShiftColorExpression(methodSummary.prefix,methodSummary.maxAbsShift));
+    map.setPaintProperty('precinct-fill','fill-opacity',0.84);
     setLegend(layer);
   } else if (layer==='cd8_council_23p') {
     loadCd8Race(layer);
@@ -2353,7 +2429,19 @@ async function updateAreaPerformance() {
   const area=typeLabel();
   let html='';
 
-  if (layer==='cd8_rabb_overperformance') {
+  if (CD8_METHOD_LAYERS.has(layer)) {
+    const method=layer==='cd8_mail_shift'?'MAIL':'EDAY';
+    const summary=(cd8SethRabbSummary || loadCd8SethRabbShift()).methods[method];
+    html=`<div class="area-performance-head">${method==='MAIL'?'Mail':'Election Day'} vote comparison</div>
+      <div class="area-performance-area">City Council District 8 ∩ PA-03</div>
+      <div class="area-performance-sub">2023P → 2026P · ACTUAL · ${cd8SethRabbSummary.divisionCount.toLocaleString()} overlapping divisions</div>
+      <div class="area-stat-grid">
+        <div>Seth A-O ${method} votes</div><div class="v">${summary.sethTotal.toLocaleString()}</div>
+        <div>Chris Rabb ${method} votes</div><div class="v">${summary.rabbTotal.toLocaleString()}</div>
+        <div>Largest concentration difference</div><div class="v">${summary.maxAbsShift.toFixed(2)} pp</div>
+      </div>
+      <div class="area-note">Each division percentage is its share of all votes for that candidate by ${method} across the same ${cd8SethRabbSummary.divisionCount.toLocaleString()} overlapping divisions. The map shows Rabb share minus Seth share. Provisional votes are excluded.</div>`;
+  } else if (layer==='cd8_rabb_overperformance') {
     const summary=cd8SethRabbSummary || loadCd8SethRabbShift();
     html=`<div class="area-performance-head">Rabb over-performance</div>
       <div class="area-performance-area">City Council District 8 ∩ PA-03</div>
@@ -2522,6 +2610,27 @@ function wardDataBreakdownHtml(wardValue) {
     <div class="area-performance-sub">${features.length.toLocaleString()} division${features.length===1?'':'s'} in the current map area</div>`;
 
   if (layer==='none') return `${header}<div class="area-note">Select a data layer to view its ward totals.</div>`;
+
+  if (CD8_METHOD_LAYERS.has(layer)) {
+    const method=layer==='cd8_mail_shift'?'MAIL':'EDAY';
+    const summary=(cd8SethRabbSummary || loadCd8SethRabbShift()).methods[method];
+    const prefix=summary.prefix;
+    const overlap=features.filter(feature=>feature.properties?.[`${prefix}_shift_pp`]!=null);
+    const sethVotes=overlap.reduce((sum,feature)=>sum+Number(feature.properties[`${prefix}_seth_votes`]||0),0);
+    const rabbVotes=overlap.reduce((sum,feature)=>sum+Number(feature.properties[`${prefix}_rabb_votes`]||0),0);
+    const sethShare=summary.sethTotal>0?100*sethVotes/summary.sethTotal:null;
+    const rabbShare=summary.rabbTotal>0?100*rabbVotes/summary.rabbTotal:null;
+    const shift=sethShare!=null&&rabbShare!=null?rabbShare-sethShare:null;
+    return `${header}<div class="area-performance-sub">${method==='MAIL'?'Mail':'Election Day'} vote concentration · ${overlap.length.toLocaleString()} overlapping divisions</div>
+      <div class="area-stat-grid">
+        <div>Seth A-O ${method} votes</div><div class="v">${sethVotes.toLocaleString()}</div>
+        <div>Share of Seth ${method} overlap vote</div><div class="v">${sethShare==null?'—':sethShare.toFixed(2)+'%'}</div>
+        <div>Chris Rabb ${method} votes</div><div class="v">${rabbVotes.toLocaleString()}</div>
+        <div>Share of Rabb ${method} overlap vote</div><div class="v">${rabbShare==null?'—':rabbShare.toFixed(2)+'%'}</div>
+        <div>Concentration shift</div><div class="v">${sethRabbShiftLabel(shift)}</div>
+      </div>
+      <div class="area-note">Provisional votes are excluded.</div>`;
+  }
 
   if (layer==='cd8_rabb_overperformance') {
     const overlap=features.filter(feature=>feature.properties?.cd8sr_rabb_overperformance_votes!=null);
@@ -3224,6 +3333,26 @@ map.on('load', async ()=>{
     </div>`;
   }
 
+  function methodShiftPopupHtml(properties,layer) {
+    const method=layer==='cd8_mail_shift'?'MAIL':'EDAY';
+    const summary=(cd8SethRabbSummary || loadCd8SethRabbShift()).methods[method];
+    const prefix=summary.prefix;
+    const shift=properties[`${prefix}_shift_pp`];
+    if (shift==null) {
+      return `<div class="rabb-popup"><div class="rabb-popup-head">${method} VOTE CONCENTRATION</div><div class="hint">This division is outside the CD 8 ∩ PA-03 overlap.</div></div>`;
+    }
+    return `<div class="rabb-popup">
+      <div class="rabb-popup-head">${method} VOTE CONCENTRATION · ${escapeHtml(sethRabbShiftLabel(shift))}</div>
+      <div class="popup-grid">
+        <div>Seth A-O ${method} votes</div><div class="v">${Number(properties[`${prefix}_seth_votes`]||0).toLocaleString()}</div>
+        <div>Share of Seth ${method} overlap vote</div><div class="v">${Number(properties[`${prefix}_seth_share_pct`]).toFixed(2)}%</div>
+        <div>Chris Rabb ${method} votes</div><div class="v">${Number(properties[`${prefix}_rabb_votes`]||0).toLocaleString()}</div>
+        <div>Share of Rabb ${method} overlap vote</div><div class="v">${Number(properties[`${prefix}_rabb_share_pct`]).toFixed(2)}%</div>
+      </div>
+      <div class="bh16-crosswalk-note">Both percentages use only ${method} votes in the same overlapping CD 8 and PA-03 divisions. Provisional votes are excluded.</div>
+    </div>`;
+  }
+
   function rabbOverperformancePopupHtml(properties) {
     const value=properties.cd8sr_rabb_overperformance_votes;
     if (value==null) {
@@ -3448,11 +3577,13 @@ map.on('load', async ()=>{
         <div class="wfp-shift"><span>WFP improvement</span>${penetrationShiftHtml(p.wfp_penetration_shift_pp)}</div>
       </div>` : '';
     const rabb=dataLayer.value==='rabb' ? rabbPopupHtml(p) : '';
-    const cd8Race=dataLayer.value==='cd8_rabb_overperformance'
-      ? rabbOverperformancePopupHtml(p)
-      : (dataLayer.value==='cd8_seth_rabb_shift'
-        ? sethRabbShiftPopupHtml(p)
-        : (CD8_DATA_LAYERS.has(dataLayer.value) ? cd8RacePopupHtml(p,dataLayer.value) : ''));
+    const cd8Race=CD8_METHOD_LAYERS.has(dataLayer.value)
+      ? methodShiftPopupHtml(p,dataLayer.value)
+      : (dataLayer.value==='cd8_rabb_overperformance'
+        ? rabbOverperformancePopupHtml(p)
+        : (dataLayer.value==='cd8_seth_rabb_shift'
+          ? sethRabbShiftPopupHtml(p)
+          : (CD8_DATA_LAYERS.has(dataLayer.value) ? cd8RacePopupHtml(p,dataLayer.value) : '')));
     const bh16=dataLayer.value==='bernie_hillary' ? bh16PopupHtml(p) : '';
     const th16=dataLayer.value==='trump_hillary' ? th16PopupHtml(p) : '';
     const ht24=dataLayer.value==='harris_trump_24g' ? contestRacePopupHtml(p,{
