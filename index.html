@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>DAVY'S MAP EXPLORER v4.4</title>
+<title>DAVY'S MAP EXPLORER v4.5</title>
 <link rel="icon" type="image/png" href="brand-image.png">
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Knewave&display=swap" rel="stylesheet">
@@ -350,6 +350,39 @@
     font-style:italic;
   }
   .project-credit a { color:inherit; text-decoration:underline; text-underline-offset:1px; }
+  .project-about-link {
+    display:inline; padding:0; border:0; background:none; color:#707070;
+    font:900 italic 9px/1.35 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    letter-spacing:.055em; text-transform:uppercase; text-decoration:underline;
+    text-underline-offset:2px; cursor:pointer; box-shadow:none;
+  }
+  .project-about-link:hover,
+  .project-about-link:focus-visible { color:#111; background:none; outline-offset:3px; }
+  .project-about-popout {
+    display:none; position:fixed; left:14px; bottom:70px; z-index:30;
+    width:min(330px,calc(100vw - 28px)); padding:16px 17px 15px;
+    background:#fff; color:#222; border:2px solid #111;
+    box-shadow:6px 6px 0 #4F3B83;
+  }
+  .project-about-popout.is-open { display:block; }
+  .project-about-head {
+    display:flex; align-items:flex-start; justify-content:space-between; gap:14px;
+    margin-bottom:11px; padding-bottom:8px; border-bottom:1px solid #d8d8d8;
+  }
+  .project-about-title {
+    font-size:11px; line-height:1.25; font-weight:950; font-style:italic;
+    letter-spacing:.065em; text-transform:uppercase;
+  }
+  .project-about-close {
+    min-width:28px; width:28px; height:28px; padding:0; margin:-6px -7px 0 0;
+    border:0; background:transparent; color:#111; box-shadow:none;
+    font:900 19px/28px ui-sans-serif,system-ui,sans-serif; cursor:pointer;
+  }
+  .project-about-close:hover,
+  .project-about-close:focus-visible { background:#f0edf5; }
+  .project-about-popout p { margin:0 0 9px; font-size:11px; line-height:1.45; }
+  .project-about-popout p:last-child { margin-bottom:0; }
+  .project-about-popout a { color:#4F3B83; font-weight:850; text-decoration:underline; text-underline-offset:2px; }
   .map-view-count { margin-top:3px; font-style:normal; letter-spacing:.025em; }
   #sidebar { padding-bottom:78px; }
   @media (max-width:760px) {
@@ -369,7 +402,7 @@
       onerror="this.style.display='none'"
     >
     <span class="brand-title">DAVY'S MAP EXPLORER</span>
-    <span class="version-tag">v4.3</span>
+    <span class="version-tag">v4.5</span>
   </header>
   <aside id="sidebar">
     <div class="group" id="lookupGroup">
@@ -464,14 +497,22 @@
     </div>
 
     <div class="project-credit" aria-label="Project credits">
-      <div>Data analysis, interpretation, management, and overall project creation by Davy Pashley.</div>
-      <div>The use of artificial intelligence was limited to coding assistance, technical implementation, and debugging in areas beyond the creator’s existing technical skill set.</div>
-      <div>For additional map files, sources, and data visualization resources, visit <a href="https://docs.google.com/document/d/1YwSZmEgexciNE9ySvtAHgrhWAqDHIBn6Hj_Qdpg8xbI/edit?tab=t.0" target="_blank" rel="noopener noreferrer">Davy’s Map Resources</a>.</div>
+      <button id="projectAboutLink" class="project-about-link" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="projectAboutPopout">ABOUT THIS MAPPING PROJECT</button>
       <div class="map-view-count">Map views: <span id="mapViewCount">—</span></div>
       <a id="bulkMapperLaunch" class="bulk-launch" href="bulk-precinct-mapper.html">Bulk Precinct Mapper</a>
     </div>
   </aside>
   <main id="map"></main>
+</div>
+
+<div id="projectAboutPopout" class="project-about-popout" role="dialog" aria-modal="false" aria-labelledby="projectAboutTitle" hidden>
+  <div class="project-about-head">
+    <div id="projectAboutTitle" class="project-about-title">ABOUT THIS MAPPING PROJECT</div>
+    <button id="projectAboutClose" class="project-about-close" type="button" aria-label="Close project information">×</button>
+  </div>
+  <p>Data analysis, interpretation, management, and overall project creation by Davy Pashley.</p>
+  <p>The use of artificial intelligence was limited to coding assistance, technical implementation, and debugging in areas beyond the creator’s existing technical skill set.</p>
+  <p>For additional map files, sources, and data visualization resources, visit <a href="https://docs.google.com/document/d/1YwSZmEgexciNE9ySvtAHgrhWAqDHIBn6Hj_Qdpg8xbI/edit?tab=t.0" target="_blank" rel="noopener noreferrer">Davy’s Map Resources</a>.</p>
 </div>
 
 <section id="bulkMapperPage" aria-hidden="true">
@@ -513,7 +554,7 @@
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script>
-// DAVY'S MAP EXPLORER v4.4
+// DAVY'S MAP EXPLORER v4.5
 // LIVE DATA: Supabase project THE PORTAL.
 // This is a publishable browser key, not a service-role or secret key.
 const SUPABASE_URL = 'https://bxrxpiqyfnbahmqglkkc.supabase.co';
@@ -542,6 +583,9 @@ const houseDistrictsToggle = document.getElementById('houseDistrictsToggle');
 const wardLabelsText = document.getElementById('wardLabelsText');
 const divisionLabelsText = document.getElementById('divisionLabelsText');
 const mapViewCount = document.getElementById('mapViewCount');
+const projectAboutLink = document.getElementById('projectAboutLink');
+const projectAboutPopout = document.getElementById('projectAboutPopout');
+const projectAboutClose = document.getElementById('projectAboutClose');
 
 let geographyOptions = {};
 let currentPrecincts = {type:'FeatureCollection',features:[]};
@@ -572,6 +616,15 @@ const PHILLY_PLACE_GEOCODER = 'https://citygeo-geocoder-pub.databridge.phila.gov
 const PHILLY_BBOX = {minX:-75.30, maxX:-74.95, minY:39.84, maxY:40.16};
 let addressCandidates = [];
 let selectedAddressCandidate = -1;
+
+function setProjectAboutOpen(open) {
+  const shouldOpen=Boolean(open);
+  projectAboutPopout.hidden=!shouldOpen;
+  projectAboutPopout.classList.toggle('is-open',shouldOpen);
+  projectAboutLink.setAttribute('aria-expanded',String(shouldOpen));
+  if (shouldOpen) projectAboutClose.focus();
+  else projectAboutLink.focus();
+}
 
 function removeAddressMarker() {
   if (addressMarker) { addressMarker.remove(); addressMarker = null; }
@@ -3269,6 +3322,17 @@ geoValue.addEventListener('change',()=>{
   loadGeography(true);
 });
 dataLayer.addEventListener('change',updateDataLayer);
+projectAboutLink.addEventListener('click',event=>{
+  event.stopPropagation();
+  setProjectAboutOpen(projectAboutPopout.hidden);
+});
+projectAboutClose.addEventListener('click',()=>setProjectAboutOpen(false));
+document.addEventListener('keydown',event=>{
+  if (event.key==='Escape' && !projectAboutPopout.hidden) setProjectAboutOpen(false);
+});
+document.addEventListener('click',event=>{
+  if (!projectAboutPopout.hidden && !projectAboutPopout.contains(event.target)) setProjectAboutOpen(false);
+});
 houseDistrictsToggle.addEventListener('change',()=>{
   if (!houseDistrictsToggle.checked) selectedSd16HouseDistrict=null;
   setSd16HouseVisibility();
