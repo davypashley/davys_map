@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>DAVY'S MAP EXPLORER v4.7</title>
+<title>DAVY'S MAP EXPLORER v4.8</title>
 <link rel="icon" type="image/png" href="brand-image.png">
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Knewave&display=swap" rel="stylesheet">
@@ -402,7 +402,7 @@
       onerror="this.style.display='none'"
     >
     <span class="brand-title">DAVY'S MAP EXPLORER</span>
-    <span class="version-tag">v4.7</span>
+    <span class="version-tag">v4.8</span>
   </header>
   <aside id="sidebar">
     <div class="group" id="lookupGroup">
@@ -445,6 +445,7 @@
         <option value="cd8_mayor_23p" hidden>CD 8 · 2023 Primary · Helen Gym vs Cherelle Parker vs Rebecca Rhynhart</option>
         <option value="cd8_congress_26p" hidden>CD 8 · 2026 Primary · Chris Rabb vs Sharif Street vs Ala Stanford</option>
         <option value="cd8_seth_rabb_shift" hidden>CD 8 ∩ PA-03 · Seth Anderson-Oberman → Chris Rabb vote concentration</option>
+        <option value="cd8_rabb_overperformance" hidden>CD 8 ∩ PA-03 · Rabb over-performance votes</option>
         <option value="harris_trump_24g">2024 General · Kamala Harris vs Donald Trump · margin</option>
         <option value="dougherty_24g">2024 General · Sean Dougherty vs Aizaz Gill · PA House 172 margin</option>
         <option value="bernie_hillary">2016 Primary · Bernie Sanders vs Hillary Clinton · margin</option>
@@ -555,7 +556,7 @@
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script>
-// DAVY'S MAP EXPLORER v4.7
+// DAVY'S MAP EXPLORER v4.8
 // LIVE DATA: Supabase project THE PORTAL.
 // This is a publishable browser key, not a service-role or secret key.
 const SUPABASE_URL = 'https://bxrxpiqyfnbahmqglkkc.supabase.co';
@@ -996,7 +997,7 @@ const SD16_HOUSE_DISTRICTS = new Set(['131','132','134','143','145','183','187']
 const SD16_DATA_LAYERS = new Set(['sd16_22g','sd16_pinsley_density','sd16_pinsley_dem_gap']);
 // Keep retired/temporarily hidden SD16 layers isolated from the Philadelphia dropdown.
 const SD16_ONLY_DATA_LAYERS = new Set([...SD16_DATA_LAYERS,'sd16_registration_26p']);
-const CD8_DATA_LAYERS = new Set(['cd8_council_23p','cd8_mayor_23p','cd8_congress_26p','cd8_seth_rabb_shift']);
+const CD8_DATA_LAYERS = new Set(['cd8_council_23p','cd8_mayor_23p','cd8_congress_26p','cd8_seth_rabb_shift','cd8_rabb_overperformance']);
 let cd8SethRabbSummary = null;
 const CD8_LAYER_CONFIG = {
   cd8_council_23p:{
@@ -1583,6 +1584,7 @@ function loadCd8SethRabbShift() {
     p.cd8sr_seth_share_pct=null;
     p.cd8sr_rabb_share_pct=null;
     p.cd8sr_shift_pp=null;
+    p.cd8sr_rabb_overperformance_votes=null;
 
     const divisionCode=String(p.division_code||'');
     const sethVotes=CD8_ELECTION_DATA.council23?.divisions?.[divisionCode]?.[0];
@@ -1605,9 +1607,19 @@ function loadCd8SethRabbShift() {
     p.cd8sr_seth_share_pct=sethShare;
     p.cd8sr_rabb_share_pct=rabbShare;
     p.cd8sr_shift_pp=sethShare!=null && rabbShare!=null ? rabbShare-sethShare : null;
+    p.cd8sr_rabb_overperformance_votes=rabbShare!=null && sethShare!=null && rabbShare>sethShare
+      ? row.rabbVotes-row.sethVotes : 0;
   }
 
-  cd8SethRabbSummary={divisionCount:overlap.length,sethTotal,rabbTotal};
+  const positiveRows=overlap.filter(row=>Number(row.feature.properties.cd8sr_rabb_overperformance_votes)>0);
+  cd8SethRabbSummary={
+    divisionCount:overlap.length,
+    sethTotal,
+    rabbTotal,
+    overperformanceDivisionCount:positiveRows.length,
+    overperformanceVotes:positiveRows.reduce((sum,row)=>sum+Number(row.feature.properties.cd8sr_rabb_overperformance_votes),0),
+    maxOverperformanceVotes:positiveRows.reduce((max,row)=>Math.max(max,Number(row.feature.properties.cd8sr_rabb_overperformance_votes)),0)
+  };
   map.getSource('precincts').setData(currentPrecincts);
   return cd8SethRabbSummary;
 }
@@ -1617,6 +1629,15 @@ function sethRabbShiftLabel(value) {
   const n=Number(value);
   if (Math.abs(n)<0.005) return 'EVEN';
   return `${n>0?'Rabb':'Seth A-O'} +${Math.abs(n).toFixed(2)} pp`;
+}
+
+function rabbOverperformanceColorExpression(maxValue) {
+  const max=Math.max(1,Number(maxValue)||1);
+  return ['case',
+    ['==',['get','cd8sr_rabb_overperformance_votes'],null],'rgba(255,255,255,0)',
+    ['interpolate',['linear'],['get','cd8sr_rabb_overperformance_votes'],
+      0,'#ffffff',max*0.25,'#c7e9c0',max*0.5,'#74c476',max*0.75,'#238b45',max,'#005a32']
+  ];
 }
 
 function cd8RankColorExpression(config) {
@@ -1747,6 +1768,19 @@ function setLegend(layer) {
       <div class="legend-row"><span class="swatch" style="background:#b7a4d4"></span><span>Rabb +0.15 to 0.35 pp</span></div>
       <div class="legend-row"><span class="swatch" style="background:#4F3B83"></span><span>Rabb +0.35 pp or more</span></div>
       <div class="area-note">Each percentage is the division's share of that candidate's total vote across the same overlapping divisions.</div>`;
+    return;
+  }
+  if (layer==='cd8_rabb_overperformance') {
+    const max=Math.max(1,Number(cd8SethRabbSummary?.maxOverperformanceVotes)||84);
+    legend.style.display='block';
+    legendTitle.textContent='Rabb over-performance votes · CD 8 ∩ PA-03';
+    legendRows.innerHTML=`
+      <div class="legend-row"><span class="swatch" style="background:#ffffff;border:1px solid #bdbdbd"></span><span>0 votes</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#c7e9c0"></span><span>${Math.round(max*0.25).toLocaleString()} votes</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#74c476"></span><span>${Math.round(max*0.5).toLocaleString()} votes</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#238b45"></span><span>${Math.round(max*0.75).toLocaleString()} votes</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#005a32"></span><span>${Math.round(max).toLocaleString()} votes · maximum</span></div>
+      <div class="area-note">Continuous scale. Rabb votes minus Seth votes only where Rabb's overlap-vote percentage is higher; all other overlapping divisions equal 0.</div>`;
     return;
   }
   if (layer==='cd8_council_23p') {
@@ -1910,6 +1944,11 @@ async function updateDataLayer() {
           '#176b2c',-0.35,'#78ba73',-0.15,'#cde8c8',-0.05,'#f3f0e6',0.05,'#ded3ec',0.15,'#b7a4d4',0.35,'#4F3B83']
       ]);
     map.setPaintProperty('precinct-fill','fill-opacity',0.84);
+  } else if (layer==='cd8_rabb_overperformance') {
+    const summary=loadCd8SethRabbShift();
+    map.setPaintProperty('precinct-fill','fill-color',rabbOverperformanceColorExpression(summary.maxOverperformanceVotes));
+    map.setPaintProperty('precinct-fill','fill-opacity',0.88);
+    setLegend(layer);
   } else if (layer==='cd8_council_23p') {
     loadCd8Race(layer);
     map.setPaintProperty('precinct-fill','fill-color',
@@ -2314,7 +2353,18 @@ async function updateAreaPerformance() {
   const area=typeLabel();
   let html='';
 
-  if (layer==='cd8_seth_rabb_shift') {
+  if (layer==='cd8_rabb_overperformance') {
+    const summary=cd8SethRabbSummary || loadCd8SethRabbShift();
+    html=`<div class="area-performance-head">Rabb over-performance</div>
+      <div class="area-performance-area">City Council District 8 ∩ PA-03</div>
+      <div class="area-performance-sub">${summary.overperformanceDivisionCount.toLocaleString()} of ${summary.divisionCount.toLocaleString()} overlapping divisions</div>
+      <div class="area-stat-grid">
+        <div>Rabb over-performance votes</div><div class="v">${summary.overperformanceVotes.toLocaleString()}</div>
+        <div>Highest division value</div><div class="v">${summary.maxOverperformanceVotes.toLocaleString()}</div>
+        <div>Other overlapping divisions</div><div class="v">${(summary.divisionCount-summary.overperformanceDivisionCount).toLocaleString()} at 0</div>
+      </div>
+      <div class="area-note">For divisions where Rabb's share of his overlap-wide vote exceeds Seth A-O's share of his overlap-wide vote, the value is Rabb votes minus Seth votes. Otherwise it is 0.</div>`;
+  } else if (layer==='cd8_seth_rabb_shift') {
     const summary=cd8SethRabbSummary || loadCd8SethRabbShift();
     html=`<div class="area-performance-head">Overlapping-area comparison</div>
       <div class="area-performance-area">City Council District 8 ∩ PA-03</div>
@@ -2472,6 +2522,19 @@ function wardDataBreakdownHtml(wardValue) {
     <div class="area-performance-sub">${features.length.toLocaleString()} division${features.length===1?'':'s'} in the current map area</div>`;
 
   if (layer==='none') return `${header}<div class="area-note">Select a data layer to view its ward totals.</div>`;
+
+  if (layer==='cd8_rabb_overperformance') {
+    const overlap=features.filter(feature=>feature.properties?.cd8sr_rabb_overperformance_votes!=null);
+    const positives=overlap.filter(feature=>Number(feature.properties.cd8sr_rabb_overperformance_votes)>0);
+    const votes=positives.reduce((sum,feature)=>sum+Number(feature.properties.cd8sr_rabb_overperformance_votes),0);
+    const max=positives.reduce((highest,feature)=>Math.max(highest,Number(feature.properties.cd8sr_rabb_overperformance_votes)),0);
+    return `${header}<div class="area-performance-sub">Rabb over-performance · ${positives.length.toLocaleString()} of ${overlap.length.toLocaleString()} overlapping divisions</div>
+      <div class="area-stat-grid">
+        <div>Rabb over-performance votes</div><div class="v">${votes.toLocaleString()}</div>
+        <div>Highest division value</div><div class="v">${max.toLocaleString()}</div>
+        <div>Other overlapping divisions</div><div class="v">${(overlap.length-positives.length).toLocaleString()} at 0</div>
+      </div>`;
+  }
 
   if (layer==='cd8_seth_rabb_shift') {
     const summary=cd8SethRabbSummary || loadCd8SethRabbShift();
@@ -3161,6 +3224,24 @@ map.on('load', async ()=>{
     </div>`;
   }
 
+  function rabbOverperformancePopupHtml(properties) {
+    const value=properties.cd8sr_rabb_overperformance_votes;
+    if (value==null) {
+      return `<div class="rabb-popup"><div class="rabb-popup-head">RABB OVER-PERFORMANCE</div><div class="hint">This division is outside the CD 8 ∩ PA-03 overlap.</div></div>`;
+    }
+    const positive=Number(value)>0;
+    return `<div class="rabb-popup">
+      <div class="rabb-popup-head">RABB OVER-PERFORMANCE · ${Number(value).toLocaleString()} VOTES</div>
+      <div class="popup-grid">
+        <div>Seth A-O votes</div><div class="v">${Number(properties.cd8sr_seth_votes||0).toLocaleString()}</div>
+        <div>Seth overlap-vote share</div><div class="v">${Number(properties.cd8sr_seth_share_pct).toFixed(2)}%</div>
+        <div>Chris Rabb votes</div><div class="v">${Number(properties.cd8sr_rabb_votes||0).toLocaleString()}</div>
+        <div>Rabb overlap-vote share</div><div class="v">${Number(properties.cd8sr_rabb_share_pct).toFixed(2)}%</div>
+      </div>
+      <div class="bh16-crosswalk-note">${positive?'Rabb share is higher here, so the value is Rabb votes minus Seth votes.':'Rabb share is not higher here, so this layer assigns 0.'}</div>
+    </div>`;
+  }
+
   function bh16PopupHtml(properties) {
     const rows=parseCandidateResults(properties.bh16_candidate_results);
     if (!rows.length) return '';
@@ -3367,9 +3448,11 @@ map.on('load', async ()=>{
         <div class="wfp-shift"><span>WFP improvement</span>${penetrationShiftHtml(p.wfp_penetration_shift_pp)}</div>
       </div>` : '';
     const rabb=dataLayer.value==='rabb' ? rabbPopupHtml(p) : '';
-    const cd8Race=dataLayer.value==='cd8_seth_rabb_shift'
-      ? sethRabbShiftPopupHtml(p)
-      : (CD8_DATA_LAYERS.has(dataLayer.value) ? cd8RacePopupHtml(p,dataLayer.value) : '');
+    const cd8Race=dataLayer.value==='cd8_rabb_overperformance'
+      ? rabbOverperformancePopupHtml(p)
+      : (dataLayer.value==='cd8_seth_rabb_shift'
+        ? sethRabbShiftPopupHtml(p)
+        : (CD8_DATA_LAYERS.has(dataLayer.value) ? cd8RacePopupHtml(p,dataLayer.value) : ''));
     const bh16=dataLayer.value==='bernie_hillary' ? bh16PopupHtml(p) : '';
     const th16=dataLayer.value==='trump_hillary' ? th16PopupHtml(p) : '';
     const ht24=dataLayer.value==='harris_trump_24g' ? contestRacePopupHtml(p,{
