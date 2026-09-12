@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>DAVY'S MAP EXPLORER v4.9</title>
+<title>DAVY'S MAP EXPLORER v5.0</title>
 <link rel="icon" type="image/png" href="brand-image.png">
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Knewave&display=swap" rel="stylesheet">
@@ -402,7 +402,7 @@
       onerror="this.style.display='none'"
     >
     <span class="brand-title">DAVY'S MAP EXPLORER</span>
-    <span class="version-tag">v4.9</span>
+    <span class="version-tag">v5.0</span>
   </header>
   <aside id="sidebar">
     <div class="group" id="lookupGroup">
@@ -446,8 +446,8 @@
         <option value="cd8_congress_26p" hidden>CD 8 · 2026 Primary · Chris Rabb vs Sharif Street vs Ala Stanford</option>
         <option value="cd8_seth_rabb_shift" hidden>CD 8 ∩ PA-03 · Seth Anderson-Oberman → Chris Rabb vote concentration</option>
         <option value="cd8_rabb_overperformance" hidden>CD 8 ∩ PA-03 · Rabb over-performance votes</option>
-        <option value="cd8_mail_shift" hidden>CD 8 ∩ PA-03 · Rabb vs Seth · MAIL vote concentration</option>
-        <option value="cd8_eday_shift" hidden>CD 8 ∩ PA-03 · Rabb vs Seth · EDAY vote concentration</option>
+        <option value="cd8_mail_shift" hidden>CD 8 ∩ PA-03 · Rabb vs Seth · MAIL raw vote difference</option>
+        <option value="cd8_eday_shift" hidden>CD 8 ∩ PA-03 · Rabb vs Seth · EDAY raw vote difference</option>
         <option value="harris_trump_24g">2024 General · Kamala Harris vs Donald Trump · margin</option>
         <option value="dougherty_24g">2024 General · Sean Dougherty vs Aizaz Gill · PA House 172 margin</option>
         <option value="bernie_hillary">2016 Primary · Bernie Sanders vs Hillary Clinton · margin</option>
@@ -558,7 +558,7 @@
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script>
-// DAVY'S MAP EXPLORER v4.9
+// DAVY'S MAP EXPLORER v5.0
 // LIVE DATA: Supabase project THE PORTAL.
 // This is a publishable browser key, not a service-role or secret key.
 const SUPABASE_URL = 'https://bxrxpiqyfnbahmqglkkc.supabase.co';
@@ -1595,9 +1595,7 @@ function loadCd8SethRabbShift() {
     for (const method of Object.values(methodTotals)) {
       p[`${method.prefix}_seth_votes`]=null;
       p[`${method.prefix}_rabb_votes`]=null;
-      p[`${method.prefix}_seth_share_pct`]=null;
-      p[`${method.prefix}_rabb_share_pct`]=null;
-      p[`${method.prefix}_shift_pp`]=null;
+      p[`${method.prefix}_diff_votes`]=null;
     }
 
     const divisionCode=String(p.division_code||'');
@@ -1638,21 +1636,17 @@ function loadCd8SethRabbShift() {
       ? row.rabbVotes-row.sethVotes : 0;
     for (const [methodName,method] of Object.entries(methodTotals)) {
       const votes=row.methods[methodName];
-      const methodSethShare=method.sethTotal>0?100*votes.sethVotes/method.sethTotal:null;
-      const methodRabbShare=method.rabbTotal>0?100*votes.rabbVotes/method.rabbTotal:null;
       p[`${method.prefix}_seth_votes`]=votes.sethVotes;
       p[`${method.prefix}_rabb_votes`]=votes.rabbVotes;
-      p[`${method.prefix}_seth_share_pct`]=methodSethShare;
-      p[`${method.prefix}_rabb_share_pct`]=methodRabbShare;
-      p[`${method.prefix}_shift_pp`]=methodSethShare!=null&&methodRabbShare!=null
-        ? methodRabbShare-methodSethShare:null;
+      p[`${method.prefix}_diff_votes`]=votes.rabbVotes-votes.sethVotes;
     }
   }
 
   const positiveRows=overlap.filter(row=>Number(row.feature.properties.cd8sr_rabb_overperformance_votes)>0);
   for (const method of Object.values(methodTotals)) {
-    method.maxAbsShift=overlap.reduce((max,row)=>
-      Math.max(max,Math.abs(Number(row.feature.properties[`${method.prefix}_shift_pp`]||0))),0
+    method.voteDifference=method.rabbTotal-method.sethTotal;
+    method.maxAbsDifference=overlap.reduce((max,row)=>
+      Math.max(max,Math.abs(Number(row.feature.properties[`${method.prefix}_diff_votes`]||0))),0
     );
   }
   cd8SethRabbSummary={
@@ -1675,6 +1669,13 @@ function sethRabbShiftLabel(value) {
   return `${n>0?'Rabb':'Seth A-O'} +${Math.abs(n).toFixed(2)} pp`;
 }
 
+function rawVoteDifferenceLabel(value) {
+  if (value==null || !Number.isFinite(Number(value))) return '—';
+  const n=Number(value);
+  if (n===0) return 'EVEN';
+  return `${n>0?'Rabb':'Seth A-O'} +${Math.abs(n).toLocaleString()} vote${Math.abs(n)===1?'':'s'}`;
+}
+
 function rabbOverperformanceColorExpression(maxValue) {
   const max=Math.max(1,Number(maxValue)||1);
   return ['case',
@@ -1684,11 +1685,11 @@ function rabbOverperformanceColorExpression(maxValue) {
   ];
 }
 
-function methodShiftColorExpression(prefix,maxAbsValue) {
-  const max=Math.max(0.01,Number(maxAbsValue)||0.01);
+function methodVoteDifferenceColorExpression(prefix,maxAbsValue) {
+  const max=Math.max(1,Number(maxAbsValue)||1);
   return ['case',
-    ['==',['get',`${prefix}_shift_pp`],null],'rgba(255,255,255,0)',
-    ['interpolate',['linear'],['get',`${prefix}_shift_pp`],
+    ['==',['get',`${prefix}_diff_votes`],null],'rgba(255,255,255,0)',
+    ['interpolate',['linear'],['get',`${prefix}_diff_votes`],
       -max,'#176b2c',-max*0.5,'#78ba73',0,'#f3f0e6',
       max*0.5,'#b7a4d4',max,'#4F3B83']
   ];
@@ -1813,16 +1814,16 @@ function setLegend(layer) {
   if (CD8_METHOD_LAYERS.has(layer)) {
     const method=layer==='cd8_mail_shift'?'MAIL':'EDAY';
     const summary=cd8SethRabbSummary?.methods?.[method];
-    const max=Math.max(0.01,Number(summary?.maxAbsShift)||1);
+    const max=Math.max(1,Number(summary?.maxAbsDifference)||1);
     legend.style.display='block';
-    legendTitle.textContent=`${method} vote concentration · Rabb − Seth A-O · CD 8 ∩ PA-03`;
+    legendTitle.textContent=`${method} raw vote difference · Rabb − Seth A-O · CD 8 ∩ PA-03`;
     legendRows.innerHTML=`
-      <div class="legend-row"><span class="swatch" style="background:#176b2c"></span><span>Seth A-O +${max.toFixed(2)} pp · maximum</span></div>
-      <div class="legend-row"><span class="swatch" style="background:#78ba73"></span><span>Seth A-O +${(max*0.5).toFixed(2)} pp</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#176b2c"></span><span>Seth A-O +${Math.round(max).toLocaleString()} votes</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#78ba73"></span><span>Seth A-O +${Math.round(max*0.5).toLocaleString()} votes</span></div>
       <div class="legend-row"><span class="swatch" style="background:#f3f0e6"></span><span>Even</span></div>
-      <div class="legend-row"><span class="swatch" style="background:#b7a4d4"></span><span>Rabb +${(max*0.5).toFixed(2)} pp</span></div>
-      <div class="legend-row"><span class="swatch" style="background:#4F3B83"></span><span>Rabb +${max.toFixed(2)} pp · maximum</span></div>
-      <div class="area-note">Dynamic, symmetric scale. Each percentage is the division's share of that candidate's ${method} vote across the same overlapping divisions.</div>`;
+      <div class="legend-row"><span class="swatch" style="background:#b7a4d4"></span><span>Rabb +${Math.round(max*0.5).toLocaleString()} votes</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#4F3B83"></span><span>Rabb +${Math.round(max).toLocaleString()} votes</span></div>
+      <div class="area-note">Dynamic, symmetric scale based on the largest absolute division difference. Each division is Rabb ${method} votes minus Seth A-O ${method} votes.</div>`;
     return;
   }
   if (layer==='cd8_seth_rabb_shift') {
@@ -2022,7 +2023,7 @@ async function updateDataLayer() {
     const summary=loadCd8SethRabbShift();
     const method=layer==='cd8_mail_shift'?'MAIL':'EDAY';
     const methodSummary=summary.methods[method];
-    map.setPaintProperty('precinct-fill','fill-color',methodShiftColorExpression(methodSummary.prefix,methodSummary.maxAbsShift));
+    map.setPaintProperty('precinct-fill','fill-color',methodVoteDifferenceColorExpression(methodSummary.prefix,methodSummary.maxAbsDifference));
     map.setPaintProperty('precinct-fill','fill-opacity',0.84);
     setLegend(layer);
   } else if (layer==='cd8_council_23p') {
@@ -2432,15 +2433,16 @@ async function updateAreaPerformance() {
   if (CD8_METHOD_LAYERS.has(layer)) {
     const method=layer==='cd8_mail_shift'?'MAIL':'EDAY';
     const summary=(cd8SethRabbSummary || loadCd8SethRabbShift()).methods[method];
-    html=`<div class="area-performance-head">${method==='MAIL'?'Mail':'Election Day'} vote comparison</div>
+    html=`<div class="area-performance-head">${method==='MAIL'?'Mail':'Election Day'} raw vote comparison</div>
       <div class="area-performance-area">City Council District 8 ∩ PA-03</div>
       <div class="area-performance-sub">2023P → 2026P · ACTUAL · ${cd8SethRabbSummary.divisionCount.toLocaleString()} overlapping divisions</div>
       <div class="area-stat-grid">
         <div>Seth A-O ${method} votes</div><div class="v">${summary.sethTotal.toLocaleString()}</div>
         <div>Chris Rabb ${method} votes</div><div class="v">${summary.rabbTotal.toLocaleString()}</div>
-        <div>Largest concentration difference</div><div class="v">${summary.maxAbsShift.toFixed(2)} pp</div>
+        <div>Total raw difference</div><div class="v">${rawVoteDifferenceLabel(summary.voteDifference)}</div>
+        <div>Largest division difference</div><div class="v">${summary.maxAbsDifference.toLocaleString()} votes</div>
       </div>
-      <div class="area-note">Each division percentage is its share of all votes for that candidate by ${method} across the same ${cd8SethRabbSummary.divisionCount.toLocaleString()} overlapping divisions. The map shows Rabb share minus Seth share. Provisional votes are excluded.</div>`;
+      <div class="area-note">The map shows Rabb ${method} votes minus Seth A-O ${method} votes in each division. Provisional votes are excluded.</div>`;
   } else if (layer==='cd8_rabb_overperformance') {
     const summary=cd8SethRabbSummary || loadCd8SethRabbShift();
     html=`<div class="area-performance-head">Rabb over-performance</div>
@@ -2615,19 +2617,15 @@ function wardDataBreakdownHtml(wardValue) {
     const method=layer==='cd8_mail_shift'?'MAIL':'EDAY';
     const summary=(cd8SethRabbSummary || loadCd8SethRabbShift()).methods[method];
     const prefix=summary.prefix;
-    const overlap=features.filter(feature=>feature.properties?.[`${prefix}_shift_pp`]!=null);
+    const overlap=features.filter(feature=>feature.properties?.[`${prefix}_diff_votes`]!=null);
     const sethVotes=overlap.reduce((sum,feature)=>sum+Number(feature.properties[`${prefix}_seth_votes`]||0),0);
     const rabbVotes=overlap.reduce((sum,feature)=>sum+Number(feature.properties[`${prefix}_rabb_votes`]||0),0);
-    const sethShare=summary.sethTotal>0?100*sethVotes/summary.sethTotal:null;
-    const rabbShare=summary.rabbTotal>0?100*rabbVotes/summary.rabbTotal:null;
-    const shift=sethShare!=null&&rabbShare!=null?rabbShare-sethShare:null;
-    return `${header}<div class="area-performance-sub">${method==='MAIL'?'Mail':'Election Day'} vote concentration · ${overlap.length.toLocaleString()} overlapping divisions</div>
+    const difference=rabbVotes-sethVotes;
+    return `${header}<div class="area-performance-sub">${method==='MAIL'?'Mail':'Election Day'} raw vote difference · ${overlap.length.toLocaleString()} overlapping divisions</div>
       <div class="area-stat-grid">
         <div>Seth A-O ${method} votes</div><div class="v">${sethVotes.toLocaleString()}</div>
-        <div>Share of Seth ${method} overlap vote</div><div class="v">${sethShare==null?'—':sethShare.toFixed(2)+'%'}</div>
         <div>Chris Rabb ${method} votes</div><div class="v">${rabbVotes.toLocaleString()}</div>
-        <div>Share of Rabb ${method} overlap vote</div><div class="v">${rabbShare==null?'—':rabbShare.toFixed(2)+'%'}</div>
-        <div>Concentration shift</div><div class="v">${sethRabbShiftLabel(shift)}</div>
+        <div>Raw difference</div><div class="v">${rawVoteDifferenceLabel(difference)}</div>
       </div>
       <div class="area-note">Provisional votes are excluded.</div>`;
   }
@@ -3337,19 +3335,18 @@ map.on('load', async ()=>{
     const method=layer==='cd8_mail_shift'?'MAIL':'EDAY';
     const summary=(cd8SethRabbSummary || loadCd8SethRabbShift()).methods[method];
     const prefix=summary.prefix;
-    const shift=properties[`${prefix}_shift_pp`];
-    if (shift==null) {
-      return `<div class="rabb-popup"><div class="rabb-popup-head">${method} VOTE CONCENTRATION</div><div class="hint">This division is outside the CD 8 ∩ PA-03 overlap.</div></div>`;
+    const difference=properties[`${prefix}_diff_votes`];
+    if (difference==null) {
+      return `<div class="rabb-popup"><div class="rabb-popup-head">${method} RAW VOTE DIFFERENCE</div><div class="hint">This division is outside the CD 8 ∩ PA-03 overlap.</div></div>`;
     }
     return `<div class="rabb-popup">
-      <div class="rabb-popup-head">${method} VOTE CONCENTRATION · ${escapeHtml(sethRabbShiftLabel(shift))}</div>
+      <div class="rabb-popup-head">${method} RAW VOTE DIFFERENCE · ${escapeHtml(rawVoteDifferenceLabel(difference))}</div>
       <div class="popup-grid">
         <div>Seth A-O ${method} votes</div><div class="v">${Number(properties[`${prefix}_seth_votes`]||0).toLocaleString()}</div>
-        <div>Share of Seth ${method} overlap vote</div><div class="v">${Number(properties[`${prefix}_seth_share_pct`]).toFixed(2)}%</div>
         <div>Chris Rabb ${method} votes</div><div class="v">${Number(properties[`${prefix}_rabb_votes`]||0).toLocaleString()}</div>
-        <div>Share of Rabb ${method} overlap vote</div><div class="v">${Number(properties[`${prefix}_rabb_share_pct`]).toFixed(2)}%</div>
+        <div>Rabb minus Seth</div><div class="v">${Number(difference)>0?'+':''}${Number(difference).toLocaleString()}</div>
       </div>
-      <div class="bh16-crosswalk-note">Both percentages use only ${method} votes in the same overlapping CD 8 and PA-03 divisions. Provisional votes are excluded.</div>
+      <div class="bh16-crosswalk-note">Raw ${method} vote difference in this division. Provisional votes are excluded.</div>
     </div>`;
   }
 
