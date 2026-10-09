@@ -402,7 +402,7 @@
       onerror="this.style.display='none'"
     >
     <span class="brand-title">DAVY'S MAP EXPLORER</span>
-    <span class="version-tag">v5.0</span>
+    <span class="version-tag">v5.1</span>
   </header>
   <aside id="sidebar">
     <div class="group" id="lookupGroup">
@@ -498,6 +498,9 @@
     <div class="group">
       <div class="eyebrow">Current view</div>
       <div id="status">Loading map…</div>
+      <button id="copyMapLink" type="button" style="margin-top:10px" disabled>Copy map link</button>
+      <div id="mapLinkStatus" role="status" style="font-size:12px;margin-top:6px"></div>
+      <input id="mapLinkFallback" aria-label="Map link to copy" readonly hidden style="width:100%;box-sizing:border-box;margin-top:6px">
     </div>
 
     <div class="project-credit" aria-label="Project credits">
@@ -558,7 +561,7 @@
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script>
-// DAVY'S MAP EXPLORER v5.0
+// DAVY'S MAP EXPLORER v5.1
 // LIVE DATA: Supabase project THE PORTAL.
 // This is a publishable browser key, not a service-role or secret key.
 const SUPABASE_URL = 'https://bxrxpiqyfnbahmqglkkc.supabase.co';
@@ -1226,6 +1229,59 @@ function populateAreas(preferredValue=null) {
     geoValue.value=String(preferredValue);
   }
 }
+
+// Stable, validated links. Restore geography before checking area-specific layers.
+function restoreMapLink() {
+  const params=new URLSearchParams(location.search);
+  const type=params.get('geo');
+  if ([...geoType.options].some(o=>o.value===type)) geoType.value=type;
+  populateAreas(params.get('area'));
+  updateModeUi();
+  const layer=params.get('layer');
+  if ([...dataLayer.options].some(o=>o.value===layer && !o.disabled && !o.hidden)) dataLayer.value=layer;
+  for (const [key,control] of mapLinkToggles()) {
+    if (params.get(key)==='1' || params.get(key)==='0') control.checked=params.get(key)==='1';
+  }
+  const opacity=params.get('opacity');
+  if (opacity!==null && opacity.trim()!=='' && Number.isFinite(Number(opacity))) {
+    basemapTransparency.value=String(Math.max(0,Math.min(100,Number(opacity))));
+  }
+}
+
+function mapLinkToggles() {
+  return [['basemap',basemapToggle],['wards',wardLabelsToggle],
+    ['divisions',divisionLabelsToggle],['polling',pollingPlacesToggle]];
+}
+
+function buildMapLink() {
+  const url=new URL(location.href);
+  url.search='';
+  url.hash='';
+  url.searchParams.set('geo',geoType.value);
+  if (geoType.value!=='citywide') url.searchParams.set('area',geoValue.value);
+  url.searchParams.set('layer',dataLayer.value);
+  for (const [key,control] of mapLinkToggles()) url.searchParams.set(key,control.checked?'1':'0');
+  url.searchParams.set('opacity',basemapTransparency.value);
+  url.searchParams.set('houses',houseDistrictsToggle.checked?'1':'0');
+  return url.href;
+}
+
+document.getElementById('copyMapLink').addEventListener('click',async()=>{
+  const link=buildMapLink();
+  const message=document.getElementById('mapLinkStatus');
+  const fallback=document.getElementById('mapLinkFallback');
+  fallback.hidden=true;
+  try {
+    await navigator.clipboard.writeText(link);
+    message.textContent='Map link copied.';
+  } catch (_) {
+    fallback.value=link;
+    fallback.hidden=false;
+    fallback.focus();
+    fallback.select();
+    message.textContent='Copy the selected link below.';
+  }
+});
 
 function walkCoords(coords, callback) {
   if (!Array.isArray(coords)) return;
@@ -2876,6 +2932,7 @@ async function loadGeography(doFit=true) {
   status.innerHTML='<strong>Loading live geography…</strong>';
   geoType.disabled=true;
   geoValue.disabled=true;
+  document.getElementById('copyMapLink').disabled=true;
 
   try {
     if (sd16) {
@@ -2936,6 +2993,7 @@ async function loadGeography(doFit=true) {
       geoType.disabled=false;
       geoValue.disabled=geoType.value==='citywide';
       updateModeUi();
+      document.getElementById('copyMapLink').disabled=false;
     }
   }
 }
@@ -3609,9 +3667,12 @@ map.on('load', async ()=>{
 
   try {
     geographyOptions = await rpc('map_geography_options');
-    populateAreas();
-    updateModeUi();
+    restoreMapLink();
     await loadGeography(true);
+    if (isSd16Mode() && new URLSearchParams(location.search).get('houses')==='1') {
+      houseDistrictsToggle.checked=true;
+      setSd16HouseVisibility();
+    }
     updateBasemap();
   } catch (err) {
     console.error(err);
