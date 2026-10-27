@@ -40,7 +40,7 @@ main{width:min(1120px,calc(100% - 32px));margin:28px auto 52px}.intro{margin-bot
 const SUPABASE_URL='https://bxrxpiqyfnbahmqglkkc.supabase.co';
 const SUPABASE_KEY='sb_publishable_KpTD5D2ISf9xPTLRC4_7vA_4F-0ZqA_';
 const FUNCTION_URL=`${SUPABASE_URL}/functions/v1/bulk-precinct-mapper`;
-const APPENDED=['normalized_address','normalized_city','normalized_state','normalized_zip','match_status','match_warning','county','municipality','precinct_name','precinct_geoid','pa_house_district','pa_senate_district','congressional_district','city_council_district'];
+const APPENDED=['match_status','match_warning','county','municipality','precinct_name','precinct_geoid','pa_house_district','pa_senate_district','congressional_district','city_council_district'];
 const fileInput=document.getElementById('fileInput'),drop=document.getElementById('drop'),fileMeta=document.getElementById('fileMeta'),matchBtn=document.getElementById('matchBtn'),resetBtn=document.getElementById('resetBtn'),progress=document.getElementById('progress'),progressBar=document.getElementById('progressBar'),progressText=document.getElementById('progressText'),results=document.getElementById('results'),summary=document.getElementById('summary'),tableHead=document.getElementById('tableHead'),tableBody=document.getElementById('tableBody'),downloadBtn=document.getElementById('downloadBtn');
 let parsed=null,matched=[];
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
