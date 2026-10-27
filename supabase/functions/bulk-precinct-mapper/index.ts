@@ -25,6 +25,24 @@ function firstGeography(geographies: Record<string, unknown>, startsWith: string
   return Array.isArray(rows) ? rows[0] || null : null;
 }
 
+// Select the latest available geography by type, regardless of Census vintage.
+function newestDistrictGeography(geographies: Record<string, unknown>, pattern: RegExp) {
+  const candidates = Object.entries(geographies || {})
+    .filter(([name, rows]) => pattern.test(name) && Array.isArray(rows) && rows.length > 0)
+    .sort(([a], [b]) => Number(b.match(/^\d+/)?.[0] || 0) - Number(a.match(/^\d+/)?.[0] || 0));
+  return candidates.length ? (candidates[0][1] as Record<string, unknown>[])[0] : null;
+}
+
+// Invalid or absent district numbers are blank rather than "0".
+function districtNumber(geography: Record<string, unknown> | null, fields: string[]) {
+  if (!geography) return "";
+  for (const field of [...fields, "BASENAME"]) {
+    const value = String(geography[field] ?? "").trim();
+    if (/^\d+$/.test(value) && Number(value) > 0) return String(Number(value));
+  }
+  return "";
+}
+
 async function fetchJson(url: URL, attempts = 2) {
   let lastError: unknown;
   for (let attempt = 0; attempt < attempts; attempt++) {
@@ -91,9 +109,14 @@ async function matchRow(row: InputRow) {
     const county = firstGeography(geographies, "Counties");
     const incorporated = firstGeography(geographies, "Incorporated Places");
     const subdivision = firstGeography(geographies, "County Subdivisions");
-    const house = firstGeography(geographies, "2024 State Legislative Districts - Lower");
-    const senate = firstGeography(geographies, "2024 State Legislative Districts - Upper");
-    const congress = firstGeography(geographies, "119th Congressional Districts");
+    const house = newestDistrictGeography(geographies, /^(?:\d{4}\s+)?State Legislative Districts\s*-\s*Lower$/i);
+    const senate = newestDistrictGeography(geographies, /^(?:\d{4}\s+)?State Legislative Districts\s*-\s*Upper$/i);
+    const congress = newestDistrictGeography(geographies, /^(?:\d+(?:st|nd|rd|th)\s+)?Congressional Districts$/i);
+    const houseNumber = districtNumber(house, ["SLDL"]);
+    const senateNumber = districtNumber(senate, ["SLDU"]);
+    const congressionalFields = Object.keys(congress || {}).filter((key) => /^CD\d+$/i.test(key))
+      .sort((a, b) => Number(b.slice(2)) - Number(a.slice(2)));
+    const congressNumber = districtNumber(congress, congressionalFields);
     const longitude = Number(match.coordinates?.x);
     const latitude = Number(match.coordinates?.y);
     if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) {
@@ -116,7 +139,9 @@ async function matchRow(row: InputRow) {
     const components = match.addressComponents || {};
     const warnings: string[] = [];
     if (!vtd) warnings.push("Address matched, but no 2020 VTD contained the point.");
-    if (!house || !senate || !congress) warnings.push("One or more current electoral districts were unavailable.");
+    if (!houseNumber) warnings.push("PA House district unavailable from Census.");
+    if (!senateNumber) warnings.push("PA Senate district unavailable from Census.");
+    if (!congressNumber) warnings.push("Congressional district unavailable from Census.");
 
     let councilDistrict = "";
     const isPhiladelphia = String(county?.GEOID || "") === "42101"
@@ -153,15 +178,15 @@ async function matchRow(row: InputRow) {
       normalized_city: String(components.city || city).toUpperCase(),
       normalized_state: "PA",
       normalized_zip: String(components.zip || zip),
-      match_status: vtd && house && senate && congress && (!isPhiladelphia || councilDistrict) ? "MATCHED" : "REVIEW",
+      match_status: vtd && houseNumber && senateNumber && congressNumber && (!isPhiladelphia || councilDistrict) ? "MATCHED" : "REVIEW",
       match_warning: warnings.join(" "),
       county: String(county?.BASENAME || county?.NAME || "").replace(/ County$/i, ""),
       municipality: String(incorporated?.BASENAME || subdivision?.BASENAME || incorporated?.NAME || subdivision?.NAME || "").replace(/ (city|borough|township|town)$/i, ""),
       precinct_name: String(vtd?.NAME || vtd?.BASENAME || ""),
       precinct_geoid: String(vtd?.GEOID || ""),
-      pa_house_district: String(house?.SLDL || house?.BASENAME || "").replace(/^0+/, "") || "0",
-      pa_senate_district: String(senate?.SLDU || senate?.BASENAME || "").replace(/^0+/, "") || "0",
-      congressional_district: String(congress?.CD119 || congress?.BASENAME || "").replace(/^0+/, "") || "0",
+      pa_house_district: houseNumber,
+      pa_senate_district: senateNumber,
+      congressional_district: congressNumber,
       longitude,
       latitude,
     };
