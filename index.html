@@ -426,7 +426,7 @@ if (window.location.hash === '#bulk-precinct-mapper') {
       <div class="svg-export-tools" style="margin-top:10px">
         <button id="exportSvgBtn" type="button" style="width:100%;padding:11px 10px;font-weight:800" disabled>↓ DOWNLOAD VECTOR SVG</button>
         <div id="exportSvgStatus" role="status" style="font-size:12px;margin-top:6px"></div>
-        <div style="font-size:11px;line-height:1.45;margin-top:5px;color:#555">Seth vs. Bass · Transparent background · Black ward & CD8 boundaries · No labels</div>
+        <div style="font-size:11px;line-height:1.45;margin-top:5px;color:#555">CD8 primary maps · Transparent background · Black ward & CD8 boundaries · No labels</div>
       </div>
       <div id="legend">
         <div id="legendTitle" class="legend-title"></div>
@@ -1176,9 +1176,9 @@ function restoreMapLink() {
   for (const [key,control] of mapLinkToggles()) {
     if (params.get(key)==='1' || params.get(key)==='0') control.checked=params.get(key)==='1';
   }
-  // The Seth vs Bass view defaults to clean black ward outlines without ward labels.
-  // An explicit ?wards=1 still lets shared links opt back into ward labels.
-  if (layer==='cd8_council_23p' && params.get('wards')===null) wardLabelsToggle.checked=false;
+  // CD8 campaign maps default to no ward-number labels, preserving black ward lines.
+  // An explicit ?wards=1 still shows labels when a shared URL requests them.
+  if ((layer==='cd8_council_23p' || layer==='cd8_congress_26p') && params.get('wards')===null) wardLabelsToggle.checked=false;
   const opacity=params.get('opacity');
   if (opacity!==null && opacity.trim()!=='' && Number.isFinite(Number(opacity))) {
     basemapTransparency.value=String(Math.max(0,Math.min(100,Number(opacity))));
@@ -1703,6 +1703,23 @@ function cd8RankColorExpression(config) {
   ];
 }
 
+// Only the 2026 CD8 congressional rank layer uses this three-color palette.
+// Keep the original green/yellow/red scale for the mayoral rank layer.
+function cd8CongressRankColorExpression(config) {
+  const rankProperty=`${config.prefix}_focal_rank`;
+  const pctProperty=`${config.prefix}_focal_pct`;
+  return ['case',
+    ['==',['get',rankProperty],null],'rgba(255,255,255,0)',
+    ['==',['get',rankProperty],1],
+      ['interpolate',['linear'],['coalesce',['get',pctProperty],0],25,'#CDB6E2',70,'#3E1066'],
+    ['==',['get',rankProperty],2],
+      ['interpolate',['linear'],['coalesce',['get',pctProperty],0],15,'#F9D3BC',50,'#DD682A'],
+    ['==',['get',rankProperty],3],
+      ['interpolate',['linear'],['coalesce',['get',pctProperty],0],0,'#FFF4C4',40,'#F9E175'],
+    'rgba(255,255,255,0)'
+  ];
+}
+
 function setLegend(layer) {
   if (layer==='sd16_22g') {
     legend.style.display='block';
@@ -1859,7 +1876,7 @@ function setLegend(layer) {
       <div class="legend-row"><span class="swatch" style="background:#3F0E66"></span><span>Seth +40 or more</span></div>`;
     return;
   }
-  if (layer==='cd8_mayor_23p' || layer==='cd8_congress_26p') {
+  if (layer==='cd8_mayor_23p') {
     const config=CD8_LAYER_CONFIG[layer];
     legend.style.display='block';
     legendTitle.textContent=`${config.focalName} rank · named-candidate comparison · CD 8`;
@@ -1868,6 +1885,16 @@ function setLegend(layer) {
       <div class="legend-row"><span class="swatch" style="background:#d19a00"></span><span>2nd place · yellow</span></div>
       <div class="legend-row"><span class="swatch" style="background:#9d2929"></span><span>3rd place · red</span></div>
       <div class="area-note">Within each rank, darker color means a higher vote share among the three named candidates.</div>`;
+    return;
+  }
+  if (layer==='cd8_congress_26p') {
+    legend.style.display='block';
+    legendTitle.textContent='Chris Rabb rank · 2026 Democratic Primary · CD 8 ∩ PA-03';
+    legendRows.innerHTML=`
+      <div class="legend-row"><span class="swatch" style="background:#3E1066"></span><span>Rabb 1st place · purple</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#DD682A"></span><span>Rabb 2nd place · orange</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#F9E175"></span><span>Rabb 3rd place · yellow</span></div>
+      <div class="area-note">Within each rank, stronger color means a higher vote share among the three named candidates. Divisions without PA-03 results are uncolored.</div>`;
     return;
   }
   if (layer==='harris_trump_24g') {
@@ -2028,11 +2055,16 @@ async function updateDataLayer() {
           '#F9E175',-40,'#FBEBA5',-20,'#FFF5D4',-5,'#F9EBD8',5,'#CEB4E1',20,'#8B5CB4',40,'#3F0E66']
       ]);
     map.setPaintProperty('precinct-fill','fill-opacity',0.90);
-  } else if (layer==='cd8_mayor_23p' || layer==='cd8_congress_26p') {
+  } else if (layer==='cd8_mayor_23p') {
     const config=CD8_LAYER_CONFIG[layer];
     loadCd8Race(layer);
     map.setPaintProperty('precinct-fill','fill-color',cd8RankColorExpression(config));
     map.setPaintProperty('precinct-fill','fill-opacity',0.84);
+  } else if (layer==='cd8_congress_26p') {
+    const config=CD8_LAYER_CONFIG[layer];
+    loadCd8Race(layer);
+    map.setPaintProperty('precinct-fill','fill-color',cd8CongressRankColorExpression(config));
+    map.setPaintProperty('precinct-fill','fill-opacity',0.88);
   } else if (layer==='harris_trump_24g') {
     map.setPaintProperty('precinct-fill','fill-color',
       ['step',['coalesce',['get','ht24_margin_pp'],-999],
