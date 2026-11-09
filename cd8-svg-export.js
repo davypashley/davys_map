@@ -26,6 +26,30 @@
     return COLOR_STOPS[6];
   }
 
+  // Match the MapLibre congressional color interpolation (rank + Rabb vote share).
+  var CONGRESS_RANK_STOPS = [
+    [25, [205,182,226], 70, [62,16,102]],  // Purple: Rabb first
+    [15, [249,211,188], 50, [221,104,42]], // Orange: Rabb second
+    [0,  [255,244,196],40, [249,225,117]] // Yellow: Rabb third
+  ];
+
+  function congressRankColor(rank, pct) {
+    var r=Number(rank);
+    if (rank == null || !Number.isFinite(r) || r<1 || r>3) return '#E9E6E0';
+    var row=CONGRESS_RANK_STOPS[r-1];
+    var share=Number.isFinite(Number(pct)) && pct!=null ? Number(pct) : 0;
+    var t=Math.max(0,Math.min(1,(share-row[0])/(row[2]-row[0])));
+    var rgb=row[1].map(function (from,i) {
+      return Math.round(from+(row[3][i]-from)*t);
+    });
+    return '#'+rgb.map(function (channel) { return channel.toString(16).padStart(2,'0'); }).join('').toUpperCase();
+  }
+
+  function isSupportedCd8Export() {
+    return isCd8Mode() &&
+      (dataLayer.value==='cd8_council_23p' || dataLayer.value==='cd8_congress_26p');
+  }
+
   function ringsForGeometry(geometry) {
     if (!geometry || !geometry.coordinates) return [];
     if (geometry.type === 'Polygon') return [geometry.coordinates];
@@ -90,9 +114,10 @@
   }
 
   function createCd8Svg() {
-    if (!isCd8Mode() || dataLayer.value !== 'cd8_council_23p') {
-      throw new Error('Select City Council 8 and the Seth vs. Bass 2023 Primary layer first.');
+    if (!isSupportedCd8Export()) {
+      throw new Error('Select City Council 8 and either the Seth vs. Bass or Chris Rabb rank layer first.');
     }
+    var congress=dataLayer.value==='cd8_congress_26p';
     var precincts=(currentPrecincts && currentPrecincts.features) || [];
     var wards=(currentWards && currentWards.features) || [];
     var boundary=(currentBoundary && currentBoundary.features) || [];
@@ -116,14 +141,22 @@
       if (!d) return '';
       var p=feature.properties || {};
       var margin=(p.cd8c23_margin_pp==null)?null:Number(p.cd8c23_margin_pp);
+      var rank=(p.cd8c26_focal_rank==null)?null:Number(p.cd8c26_focal_rank);
+      var pct=(p.cd8c26_focal_pct==null)?null:Number(p.cd8c26_focal_pct);
       var label=(p.display_id || p.division_code || '');
       var tooltip='Division '+String(label);
-      if (margin!=null && Number.isFinite(margin)) {
-        tooltip+=' - '+(margin>=0?'Seth':'Bass')+' +'+Math.abs(margin).toFixed(1)+' points';
+      var fill;
+      var attrs='';
+      if (congress) {
+        fill=congressRankColor(rank,pct);
+        tooltip+=(rank!=null && Number.isFinite(rank)) ? ' - Chris Rabb rank '+rank+' of 3 ('+(pct==null?'unknown':pct.toFixed(1))+'% of three-candidate votes)' : ' - Outside PA-03 or no contest result';
+        attrs=' data-rabb-rank="'+svgEscape(rank==null?'':rank)+'" data-rabb-share="'+svgEscape(pct==null?'':pct.toFixed(2))+'"';
       } else {
-        tooltip+=' - No recorded result';
+        fill=exportColor(margin);
+        tooltip+=(margin!=null && Number.isFinite(margin)) ? ' - '+(margin>=0?'Seth':'Bass')+' +'+Math.abs(margin).toFixed(1)+' points' : ' - No recorded result';
+        attrs=' data-margin-pp="'+svgEscape(margin==null?'':margin.toFixed(2))+'"';
       }
-      return '<path d="'+d+'" fill="'+exportColor(margin)+'" fill-rule="evenodd" stroke="#777777" stroke-opacity="0.52" stroke-width="0.9" stroke-linejoin="round" data-division="'+svgEscape(label)+'" data-margin-pp="'+svgEscape(margin == null ? '' : margin.toFixed(2))+'"><title>'+svgEscape(tooltip)+'</title></path>';
+      return '<path d="'+d+'" fill="'+fill+'" fill-rule="evenodd" stroke="#777777" stroke-opacity="0.52" stroke-width="0.9" stroke-linejoin="round" data-division="'+svgEscape(label)+'"'+attrs+'><title>'+svgEscape(tooltip)+'</title></path>';
     }).filter(Boolean).join('\n');
 
     var wardPaths=wards.map(function (feature) {
@@ -137,11 +170,17 @@
       return '<path d="'+d+'" fill="none" stroke="#000000" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>';
     }).join('\n');
 
+    var svgTitle=congress
+      ? 'CD8 — 2026 Congressional Democratic Primary — Chris Rabb rank'
+      : 'CD8 — Seth Anderson-Oberman vs. Cindy Bass — 2023 Democratic Primary';
+    var svgDesc=congress
+      ? 'Editable vector SVG. Chris Rabb first place is purple, second is orange, third is yellow; shade strength reflects vote share. Divisions without PA-03 results use neutral gray. Transparent background, black ward and CD8 boundaries; no labels or basemap.'
+      : 'Editable vector SVG. Purple denotes Seth and yellow denotes Bass; shades represent candidate vote-share margins. Transparent background. Black ward and council district boundary lines; no labels or basemap.';
     return [
       '<?xml version="1.0" encoding="UTF-8"?>',
-      '<svg xmlns="http://www.w3.org/2000/svg" width="'+canvas.width+'" height="'+canvas.height+'" viewBox="0 0 '+canvas.width+' '+canvas.height+'" role="img" aria-label="Philadelphia City Council District 8, 2023 Democratic Primary, Seth Anderson-Oberman versus Cindy Bass">',
-      '<title>CD8 — Seth Anderson-Oberman vs. Cindy Bass — 2023 Democratic Primary</title>',
-      '<desc>Editable vector SVG. Purple denotes Seth and yellow denotes Bass; shades represent candidate vote-share margins. Transparent background. Black ward and council district boundary lines; no labels or basemap.</desc>',
+      '<svg xmlns="http://www.w3.org/2000/svg" width="'+canvas.width+'" height="'+canvas.height+'" viewBox="0 0 '+canvas.width+' '+canvas.height+'" role="img" aria-label="'+svgEscape(svgTitle)+'">',
+      '<title>'+svgEscape(svgTitle)+'</title>',
+      '<desc>'+svgEscape(svgDesc)+'</desc>',
       '<defs><clipPath id="cd8-clip">'+clipping+'</clipPath></defs>',
       '<g id="precinct-results" clip-path="url(#cd8-clip)">'+divisions+'</g>',
       '<g id="ward-boundaries" clip-path="url(#cd8-clip)">'+wardPaths+'</g>',
@@ -156,7 +195,9 @@
     var href=URL.createObjectURL(blob);
     var anchor=document.createElement('a');
     anchor.href=href;
-    anchor.download='CD8_2023_Seth_vs_Bass_vector.svg';
+    anchor.download=dataLayer.value==='cd8_congress_26p'
+      ? 'CD8_2026_Rabb_Rank_vector.svg'
+      : 'CD8_2023_Seth_vs_Bass_vector.svg';
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
@@ -166,7 +207,7 @@
   function updateSvgExportButton() {
     var btn=document.getElementById('exportSvgBtn');
     if (!btn) return;
-    btn.disabled=!(isCd8Mode() && dataLayer.value==='cd8_council_23p');
+    btn.disabled=!isSupportedCd8Export();
   }
 
   function exportSvgIfRequested() {
