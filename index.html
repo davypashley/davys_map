@@ -424,7 +424,7 @@ if (window.location.hash === '#bulk-precinct-mapper') {
         <option value="sd16_registration_26p" hidden>2026 Primary · registration · DEM vs REP margin</option>
       </select>
       <div class="svg-export-tools" style="margin-top:10px">
-        <button id="exportSvgBtn" type="button" style="width:100%;padding:11px 10px;font-weight:800" disabled>↓ DOWNLOAD VECTOR SVG</button>
+        <button id="exportSvgBtn" type="button" style="width:100%;padding:11px 10px;font-weight:800">↓ DOWNLOAD VECTOR SVG</button>
         <div id="exportSvgStatus" role="status" style="font-size:12px;margin-top:6px"></div>
         <div style="font-size:11px;line-height:1.45;margin-top:5px;color:#555">CD8 primary maps · Transparent background · Black ward & CD8 boundaries · No labels</div>
       </div>
@@ -2872,6 +2872,7 @@ function updateModeUi() {
   setPollingVisibility();
   setSd16HouseVisibility();
   updateLabelInteractionMode();
+  if (window.updateSvgExportButton) window.updateSvgExportButton();
 }
 
 function filterNormalBoundary(boundary) {
@@ -2963,6 +2964,7 @@ async function loadGeography(doFit=true) {
       geoValue.disabled=geoType.value==='citywide';
       updateModeUi();
       document.getElementById('copyMapLink').disabled=false;
+      if (window.updateSvgExportButton) window.updateSvgExportButton();
     }
   }
 }
@@ -3707,6 +3709,6 @@ document.addEventListener('keydown',e=>{
   }
 });
 </script>
-<script src="cd8-svg-export.js"></script>
+<script src="cd8-svg-export.js?v=20261109-congress-export-fix"></script>
 </body>
 </html>
