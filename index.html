@@ -1171,6 +1171,9 @@ function restoreMapLink() {
   for (const [key,control] of mapLinkToggles()) {
     if (params.get(key)==='1' || params.get(key)==='0') control.checked=params.get(key)==='1';
   }
+  // The Seth vs Bass view defaults to clean black ward outlines without ward labels.
+  // An explicit ?wards=1 still lets shared links opt back into ward labels.
+  if (layer==='cd8_council_23p' && params.get('wards')===null) wardLabelsToggle.checked=false;
   const opacity=params.get('opacity');
   if (opacity!==null && opacity.trim()!=='' && Number.isFinite(Number(opacity))) {
     basemapTransparency.value=String(Math.max(0,Math.min(100,Number(opacity))));
@@ -1840,15 +1843,15 @@ function setLegend(layer) {
   }
   if (layer==='cd8_council_23p') {
     legend.style.display='block';
-    legendTitle.textContent='Anderson-Oberman − Bass margin · 2023 Democratic Primary · CD 8';
+    legendTitle.textContent='Seth Anderson-Oberman − Cindy Bass margin · 2023 Democratic Primary · CD 8';
     legendRows.innerHTML=`
-      <div class="legend-row"><span class="swatch" style="background:#9d2929"></span><span>Bass +40 or more</span></div>
-      <div class="legend-row"><span class="swatch" style="background:#d46767"></span><span>Bass +20 to +40</span></div>
-      <div class="legend-row"><span class="swatch" style="background:#eab8b8"></span><span>Bass +5 to +20</span></div>
-      <div class="legend-row"><span class="swatch" style="background:#f3f0e6"></span><span>Within 5 points</span></div>
-      <div class="legend-row"><span class="swatch" style="background:#cde8c8"></span><span>Anderson-Oberman +5 to +20</span></div>
-      <div class="legend-row"><span class="swatch" style="background:#78ba73"></span><span>Anderson-Oberman +20 to +40</span></div>
-      <div class="legend-row"><span class="swatch" style="background:#2f7d32"></span><span>Anderson-Oberman +40 or more</span></div>`;
+      <div class="legend-row"><span class="swatch" style="background:#F4E147"></span><span>Bass +40 or more</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#F7E77B"></span><span>Bass +20 to +40</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#FCF4BA"></span><span>Bass +5 to +20</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#F9EBD8"></span><span>Within 5 points</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#CBB8EB"></span><span>Seth +5 to +20</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#936DCF"></span><span>Seth +20 to +40</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#542E96"></span><span>Seth +40 or more</span></div>`;
     return;
   }
   if (layer==='cd8_mayor_23p' || layer==='cd8_congress_26p') {
@@ -2017,9 +2020,9 @@ async function updateDataLayer() {
       ['case',
         ['==',['get','cd8c23_margin_pp'],null],'rgba(255,255,255,0)',
         ['step',['get','cd8c23_margin_pp'],
-          '#9d2929',-40,'#d46767',-20,'#eab8b8',-5,'#f3f0e6',5,'#cde8c8',20,'#78ba73',40,'#2f7d32']
+          '#F4E147',-40,'#F7E77B',-20,'#FCF4BA',-5,'#F9EBD8',5,'#CBB8EB',20,'#936DCF',40,'#542E96']
       ]);
-    map.setPaintProperty('precinct-fill','fill-opacity',0.82);
+    map.setPaintProperty('precinct-fill','fill-opacity',0.90);
   } else if (layer==='cd8_mayor_23p' || layer==='cd8_congress_26p') {
     const config=CD8_LAYER_CONFIG[layer];
     loadCd8Race(layer);
