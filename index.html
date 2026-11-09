@@ -423,6 +423,11 @@ if (window.location.hash === '#bulk-precinct-mapper') {
         <option value="sd16_pinsley_dem_gap" hidden>2022 Pinsley vote contribution vs 2026 DEM registration</option>
         <option value="sd16_registration_26p" hidden>2026 Primary · registration · DEM vs REP margin</option>
       </select>
+      <div class="svg-export-tools" style="margin-top:10px">
+        <button id="exportSvgBtn" type="button" style="width:100%;padding:11px 10px;font-weight:800" disabled>↓ DOWNLOAD VECTOR SVG</button>
+        <div id="exportSvgStatus" role="status" style="font-size:12px;margin-top:6px"></div>
+        <div style="font-size:11px;line-height:1.45;margin-top:5px;color:#555">Seth vs. Bass · Transparent background · Black ward & CD8 boundaries · No labels</div>
+      </div>
       <div id="legend">
         <div id="legendTitle" class="legend-title"></div>
         <div id="legendRows"></div>
@@ -465,8 +470,6 @@ if (window.location.hash === '#bulk-precinct-mapper') {
       <div class="eyebrow">Current view</div>
       <div id="status">Loading map…</div>
       <button id="copyMapLink" type="button" style="margin-top:10px" disabled>Copy map link</button>
-      <button id="exportSvgBtn" type="button" style="margin-top:9px" disabled>Export CD8 map as SVG</button>
-      <div id="exportSvgStatus" role="status" style="font-size:12px;margin-top:6px"></div>
       <div id="mapLinkStatus" role="status" style="font-size:12px;margin-top:6px"></div>
       <input id="mapLinkFallback" aria-label="Map link to copy" readonly hidden style="width:100%;box-sizing:border-box;margin-top:6px">
     </div>
