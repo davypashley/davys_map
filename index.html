@@ -465,6 +465,8 @@ if (window.location.hash === '#bulk-precinct-mapper') {
       <div class="eyebrow">Current view</div>
       <div id="status">Loading map…</div>
       <button id="copyMapLink" type="button" style="margin-top:10px" disabled>Copy map link</button>
+      <button id="exportSvgBtn" type="button" style="margin-top:9px" disabled>Export CD8 map as SVG</button>
+      <div id="exportSvgStatus" role="status" style="font-size:12px;margin-top:6px"></div>
       <div id="mapLinkStatus" role="status" style="font-size:12px;margin-top:6px"></div>
       <input id="mapLinkFallback" aria-label="Map link to copy" readonly hidden style="width:100%;box-sizing:border-box;margin-top:6px">
     </div>
@@ -1845,13 +1847,13 @@ function setLegend(layer) {
     legend.style.display='block';
     legendTitle.textContent='Seth Anderson-Oberman − Cindy Bass margin · 2023 Democratic Primary · CD 8';
     legendRows.innerHTML=`
-      <div class="legend-row"><span class="swatch" style="background:#F4E147"></span><span>Bass +40 or more</span></div>
-      <div class="legend-row"><span class="swatch" style="background:#F7E77B"></span><span>Bass +20 to +40</span></div>
-      <div class="legend-row"><span class="swatch" style="background:#FCF4BA"></span><span>Bass +5 to +20</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#F9E175"></span><span>Bass +40 or more</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#FBEBA5"></span><span>Bass +20 to +40</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#FFF5D4"></span><span>Bass +5 to +20</span></div>
       <div class="legend-row"><span class="swatch" style="background:#F9EBD8"></span><span>Within 5 points</span></div>
-      <div class="legend-row"><span class="swatch" style="background:#CBB8EB"></span><span>Seth +5 to +20</span></div>
-      <div class="legend-row"><span class="swatch" style="background:#936DCF"></span><span>Seth +20 to +40</span></div>
-      <div class="legend-row"><span class="swatch" style="background:#542E96"></span><span>Seth +40 or more</span></div>`;
+      <div class="legend-row"><span class="swatch" style="background:#CEB4E1"></span><span>Seth +5 to +20</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#8B5CB4"></span><span>Seth +20 to +40</span></div>
+      <div class="legend-row"><span class="swatch" style="background:#3F0E66"></span><span>Seth +40 or more</span></div>`;
     return;
   }
   if (layer==='cd8_mayor_23p' || layer==='cd8_congress_26p') {
@@ -2020,7 +2022,7 @@ async function updateDataLayer() {
       ['case',
         ['==',['get','cd8c23_margin_pp'],null],'rgba(255,255,255,0)',
         ['step',['get','cd8c23_margin_pp'],
-          '#F4E147',-40,'#F7E77B',-20,'#FCF4BA',-5,'#F9EBD8',5,'#CBB8EB',20,'#936DCF',40,'#542E96']
+          '#F9E175',-40,'#FBEBA5',-20,'#FFF5D4',-5,'#F9EBD8',5,'#CEB4E1',20,'#8B5CB4',40,'#3F0E66']
       ]);
     map.setPaintProperty('precinct-fill','fill-opacity',0.90);
   } else if (layer==='cd8_mayor_23p' || layer==='cd8_congress_26p') {
@@ -3606,6 +3608,8 @@ map.on('load', async ()=>{
       setSd16HouseVisibility();
     }
     updateBasemap();
+    // A direct export link can generate the SVG after the live district data loads.
+    if (window.exportSvgIfRequested) window.exportSvgIfRequested();
   } catch (err) {
     console.error(err);
     status.innerHTML=`<strong>Supabase connection error</strong><br>${err.message}`;
@@ -3668,5 +3672,6 @@ document.addEventListener('keydown',e=>{
   }
 });
 </script>
+<script src="cd8-svg-export.js"></script>
 </body>
 </html>
